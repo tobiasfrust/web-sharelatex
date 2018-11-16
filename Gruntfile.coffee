@@ -117,8 +117,8 @@ module.exports = (grunt) ->
 			client:
 				expand: true,
 				flatten: false,
-				cwd: 'public/coffee',
-				src: ['**/*.coffee'],
+				cwd: 'public/src',
+				src: ['**/*.js'],
 				dest: 'public/js/',
 				ext: '.js',
 				options:
