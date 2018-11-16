@@ -415,3 +415,22 @@ describe 'TokenAccess', ->
 			try_content_access(@other2, @project_id, (response, body) =>
 				expect(body.privilegeLevel).to.equal false
 			, done)
+
+	describe 'unimported v1 project', ->
+		it 'should redirect read and write token to v1', (done) ->
+			unimportedV1Token = '123abc'
+			try_read_and_write_token_access(@owner, unimportedV1Token, (response, body) =>
+				expect(response.statusCode).to.equal 302
+				expect(response.headers.location).to.equal(
+					'/sign_in_to_v1?return_to=/123abc'
+				)
+			, done)
+
+		it 'should redirect read only token to v1', (done) ->
+			unimportedV1Token = 'abcd'
+			try_read_only_token_access(@owner, unimportedV1Token, (response, body) =>
+				expect(response.statusCode).to.equal 302
+				expect(response.headers.location).to.equal(
+					'/sign_in_to_v1?return_to=/read/abcd'
+				)
+			, done)

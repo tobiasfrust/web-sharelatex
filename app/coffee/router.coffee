@@ -22,7 +22,7 @@ UserPagesController = require('./Features/User/UserPagesController')
 DocumentController = require('./Features/Documents/DocumentController')
 CompileManager = require("./Features/Compile/CompileManager")
 CompileController = require("./Features/Compile/CompileController")
-ClsiCookieManager = require("./Features/Compile/ClsiCookieManager")
+ClsiCookieManager = require("./Features/Compile/ClsiCookieManager")(Settings.apis.clsi?.backendGroupName)
 HealthCheckController = require("./Features/HealthCheck/HealthCheckController")
 ProjectDownloadsController = require "./Features/Downloads/ProjectDownloadsController"
 FileStoreController = require("./Features/FileStore/FileStoreController")
@@ -50,6 +50,8 @@ TokenAccessController = require('./Features/TokenAccess/TokenAccessController')
 Features = require('./infrastructure/Features')
 LinkedFilesRouter = require './Features/LinkedFiles/LinkedFilesRouter'
 TemplatesRouter = require './Features/Templates/TemplatesRouter'
+InstitutionsController = require './Features/Institutions/InstitutionsController'
+UserMembershipRouter = require './Features/UserMembership/UserMembershipRouter'
 
 logger = require("logger-sharelatex")
 _ = require("underscore")
@@ -68,6 +70,7 @@ module.exports = class Router
 		webRouter.get  '/logout', UserController.logout
 		webRouter.get  '/restricted', AuthorizationMiddlewear.restricted
 
+
 		if Features.hasFeature('registration')
 			webRouter.get '/register', UserPagesController.registerPage
 			AuthenticationController.addEndpointToLoginWhitelist '/register'
@@ -83,14 +86,16 @@ module.exports = class Router
 		AnalyticsRouter.apply(webRouter, privateApiRouter, publicApiRouter)
 		LinkedFilesRouter.apply(webRouter, privateApiRouter, publicApiRouter)
 		TemplatesRouter.apply(webRouter)
+		UserMembershipRouter.apply(webRouter)
 
 		Modules.applyRouter(webRouter, privateApiRouter, publicApiRouter)
 
 		if Settings.enableSubscriptions
 			webRouter.get  '/user/bonus', AuthenticationController.requireLogin(), ReferalController.bonus
 
-		webRouter.get '/blog', BlogController.getIndexPage
-		webRouter.get '/blog/*', BlogController.getPage
+		if !Settings.overleaf?
+			webRouter.get '/blog', BlogController.getIndexPage
+			webRouter.get '/blog/*', BlogController.getPage
 
 		webRouter.get '/user/activate', UserPagesController.activateAccountPage
 		AuthenticationController.addEndpointToLoginWhitelist '/user/activate'
@@ -239,8 +244,13 @@ module.exports = class Router
 		webRouter.post "/project/:project_id/restore_file", AuthorizationMiddlewear.ensureUserCanWriteProjectContent, HistoryController.restoreFileFromV2
 		privateApiRouter.post "/project/:Project_id/history/resync", AuthenticationController.httpAuth, HistoryController.resyncProjectHistory
 
-		webRouter.post '/project/:project_id/export/:brand_variation_id', AuthorizationMiddlewear.ensureUserCanAdminProject, ExportsController.exportProject
-		webRouter.get '/project/:project_id/export/:export_id', AuthorizationMiddlewear.ensureUserCanAdminProject, ExportsController.exportStatus
+		webRouter.get "/project/:Project_id/labels", AuthorizationMiddlewear.ensureUserCanReadProject, HistoryController.selectHistoryApi, HistoryController.ensureProjectHistoryEnabled, HistoryController.getLabels
+		webRouter.post "/project/:Project_id/labels", AuthorizationMiddlewear.ensureUserCanWriteProjectContent, HistoryController.selectHistoryApi, HistoryController.ensureProjectHistoryEnabled, HistoryController.createLabel
+		webRouter.delete "/project/:Project_id/labels/:label_id", AuthorizationMiddlewear.ensureUserCanWriteProjectContent, HistoryController.selectHistoryApi, HistoryController.ensureProjectHistoryEnabled, HistoryController.deleteLabel
+
+		webRouter.post '/project/:project_id/export/:brand_variation_id', AuthorizationMiddlewear.ensureUserCanWriteProjectContent, ExportsController.exportProject
+		webRouter.get '/project/:project_id/export/:export_id', AuthorizationMiddlewear.ensureUserCanWriteProjectContent, ExportsController.exportStatus
+		webRouter.get '/project/:project_id/export/:export_id/:type', AuthorizationMiddlewear.ensureUserCanWriteProjectContent, ExportsController.exportDownload
 
 		webRouter.get  '/Project/:Project_id/download/zip', AuthorizationMiddlewear.ensureUserCanReadProject, ProjectDownloadsController.downloadProject
 		webRouter.get  '/project/download/zip', AuthorizationMiddlewear.ensureUserCanReadMultipleProjects, ProjectDownloadsController.downloadMultipleProjects
@@ -323,6 +333,24 @@ module.exports = class Router
 			),
 			AuthenticationController.httpAuth,
 			CompileController.getFileFromClsiWithoutUser
+		publicApiRouter.post '/api/institutions/confirm_university_domain', AuthenticationController.httpAuth, InstitutionsController.confirmDomain
+
+		webRouter.get '/teams', (req, res, next) ->
+			# Match v1 behaviour - if the user is signed in, show their teams list
+			# Otherwise show some information about teams
+			if AuthenticationController.isUserLoggedIn(req)
+				res.redirect('/user/subscription')
+			else if Settings.overleaf?.host
+				res.redirect("#{Settings.overleaf.host}/teams")
+			else
+				next()
+
+		webRouter.get '/chrome', (req, res, next) ->
+			# Match v1 behaviour - this is used for a Chrome web app
+			if AuthenticationController.isUserLoggedIn(req)
+				res.redirect('/project')
+			else
+				res.redirect('/register')
 
 		#Admin Stuff
 		webRouter.get  '/admin', AuthorizationMiddlewear.ensureUserIsSiteAdmin, AdminController.index
@@ -353,6 +381,9 @@ module.exports = class Router
 
 		publicApiRouter.get '/health_check/redis', HealthCheckController.checkRedis
 		privateApiRouter.get '/health_check/redis', HealthCheckController.checkRedis
+
+		publicApiRouter.get '/health_check/mongo', HealthCheckController.checkMongo
+		privateApiRouter.get '/health_check/mongo', HealthCheckController.checkMongo
 
 		webRouter.get "/status/compiler/:Project_id", AuthorizationMiddlewear.ensureUserCanReadProject, (req, res) ->
 			project_id = req.params.Project_id

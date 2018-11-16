@@ -22,6 +22,12 @@ describe "ProjectController", ->
 				chat:
 					url:"chat.com"
 			siteUrl: "mysite.com"
+		@brandVariationDetails = 
+			id: "12"
+			active: true
+			brand_name: "The journal"
+			home_url: "http://www.thejournal.com/"
+			publish_menu_link_html: "Submit your paper to the <em>The Journal</em>"
 		@token = 'some-token'
 		@ProjectDeleter =
 			archiveProject: sinon.stub().callsArg(1)
@@ -36,7 +42,7 @@ describe "ProjectController", ->
 		@SubscriptionLocator =
 			getUsersSubscription: sinon.stub()
 		@LimitationsManager =
-			userHasSubscriptionOrIsGroupMember: sinon.stub()
+			hasPaidSubscription: sinon.stub()
 		@TagsHandler =
 			getAllTags: sinon.stub()
 		@NotificationsHandler =
@@ -69,9 +75,18 @@ describe "ProjectController", ->
 		@CollaboratorsHandler =
 			userIsTokenMember: sinon.stub().callsArgWith(2, null, false)
 		@ProjectEntityHandler = {}
+		@NotificationBuilder =
+			ipMatcherAffiliation: sinon.stub().returns({create: sinon.stub()})
+		@UserGetter =
+			getUser: sinon.stub().callsArgWith 2, null, {lastLoginIp: '192.170.18.2'}
 		@Modules =
 			hooks:
 				fire: sinon.stub()
+		@Features =
+			hasFeature: sinon.stub()
+		@BrandVariationsHandler = 
+			getBrandVariationById: sinon.stub().callsArgWith 1, null, @brandVariationDetails
+
 		@ProjectController = SandboxedModule.require modulePath, requires:
 			"settings-sharelatex":@settings
 			"logger-sharelatex":
@@ -102,11 +117,18 @@ describe "ProjectController", ->
 			"../../infrastructure/Modules": @Modules
 			"./ProjectEntityHandler": @ProjectEntityHandler
 			"../Errors/Errors": Errors
+			"../../infrastructure/Features": @Features
+			"../Notifications/NotificationsBuilder":@NotificationBuilder
+			"../User/UserGetter": @UserGetter
+			"../BrandVariations/BrandVariationsHandler": @BrandVariationsHandler
 
 		@projectName = "£12321jkj9ujkljds"
 		@req =
 			params:
 				Project_id: @project_id
+			headers: {}
+			connection:
+				remoteAddress: "192.170.18.1"
 			session:
 				user: @user
 			body:
@@ -137,6 +159,18 @@ describe "ProjectController", ->
 			@res.sendStatus = (code) =>
 				@EditorController.setCompiler
 					.calledWith(@project_id, @compiler)
+					.should.equal true
+				code.should.equal 204
+				done()
+			@ProjectController.updateProjectSettings @req, @res
+
+		it "should update the imageName", (done) ->
+			@EditorController.setImageName = sinon.stub().callsArg(2)
+			@req.body =
+				imageName: @imageName = "texlive-1234.5"
+			@res.sendStatus = (code) =>
+				@EditorController.setImageName
+					.calledWith(@project_id, @imageName)
 					.should.equal true
 				code.should.equal 204
 				done()
@@ -268,7 +302,7 @@ describe "ProjectController", ->
 			@UserModel.findById = (id, fields, callback) =>
 				callback null, @users[id]
 
-			@LimitationsManager.userHasSubscriptionOrIsGroupMember.callsArgWith(1, null, false)
+			@LimitationsManager.hasPaidSubscription.callsArgWith(1, null, false)
 			@TagsHandler.getAllTags.callsArgWith(1, null, @tags, {})
 			@NotificationsHandler.getUserNotifications = sinon.stub().callsArgWith(1, null, @notifications, {})
 			@ProjectGetter.findAllUsersProjects.callsArgWith(2, null, @allProjects)
@@ -283,6 +317,13 @@ describe "ProjectController", ->
 		it "should send the tags", (done)->
 			@res.render = (pageName, opts)=>
 				opts.tags.length.should.equal @tags.length
+				done()
+			@ProjectController.projectListPage @req, @res
+
+		it "should create trigger ip matcher notifications", (done)->
+			@settings.overleaf = true
+			@res.render = (pageName, opts)=>
+				@NotificationBuilder.ipMatcherAffiliation.called.should.equal true
 				done()
 			@ProjectController.projectListPage @req, @res
 
@@ -312,7 +353,7 @@ describe "ProjectController", ->
 			@ProjectController.projectListPage @req, @res
 
 		it 'should send hasSubscription == true when there is a subscription', (done) ->
-			@LimitationsManager.userHasSubscriptionOrIsGroupMember = sinon.stub().callsArgWith(1, null, true)
+			@LimitationsManager.hasPaidSubscription = sinon.stub().callsArgWith(1, null, true)
 			@res.render = (pageName, opts)=>
 				opts.hasSubscription.should.equal true
 				done()
@@ -432,7 +473,7 @@ describe "ProjectController", ->
 			@UserModel.findById = (id, fields, callback) =>
 				callback null, @users[id]
 
-			@LimitationsManager.userHasSubscriptionOrIsGroupMember.callsArgWith(1, null, false)
+			@LimitationsManager.hasPaidSubscription.callsArgWith(1, null, false)
 			@TagsHandler.getAllTags.callsArgWith(1, null, @tags, {})
 			@NotificationsHandler.getUserNotifications = sinon.stub().callsArgWith(1, null, @notifications, {})
 			@ProjectGetter.findAllUsersProjects.callsArgWith(2, null, @allProjects)
@@ -479,6 +520,11 @@ describe "ProjectController", ->
 				name:"my proj"
 				_id:"213123kjlkj"
 				owner_ref: '59fc84d5fbea77482d436e1b'
+			@brandedProject =
+				name:"my branded proj"
+				_id:"3252332"
+				owner_ref: '59fc84d5fbea77482d436e1b'
+				brandVariationId:"12"
 			@user =
 				_id: "588f3ddae8ebc1bac07c9fa4"
 				ace:
@@ -509,7 +555,7 @@ describe "ProjectController", ->
 		it "should add on userSettings", (done)->
 			@res.render = (pageName, opts)=>
 				opts.userSettings.fontSize.should.equal @user.ace.fontSize
-				opts.userSettings.theme.should.equal @user.ace.theme
+				opts.userSettings.editorTheme.should.equal @user.ace.theme
 				done()
 			@ProjectController.loadEditor @req, @res
 
@@ -536,6 +582,26 @@ describe "ProjectController", ->
 		it "should mark project as opened", (done)->
 			@res.render = (pageName, opts)=>
 				@ProjectUpdateHandler.markAsOpened.calledWith(@project_id).should.equal true
+				done()
+			@ProjectController.loadEditor @req, @res
+
+		it "should call the brand variations handler for branded projects", (done)->
+			@ProjectGetter.getProject.callsArgWith 2, null, @brandedProject
+			@res.render = (pageName, opts)=>
+				@BrandVariationsHandler.getBrandVariationById.calledWith().should.equal true
+				done()
+			@ProjectController.loadEditor @req, @res
+
+		it "should not call the brand variations handler for unbranded projects", (done)->
+			@res.render = (pageName, opts)=>
+				@BrandVariationsHandler.getBrandVariationById.called.should.equal false
+				done()
+			@ProjectController.loadEditor @req, @res
+
+		it "should expose the brand variation details as locals for branded projects", (done)->
+			@ProjectGetter.getProject.callsArgWith 2, null, @brandedProject
+			@res.render = (pageName, opts)=>
+				opts.brandVariation.should.deep.equal @brandVariationDetails
 				done()
 			@ProjectController.loadEditor @req, @res
 

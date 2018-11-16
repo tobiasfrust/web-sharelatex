@@ -13,9 +13,9 @@
 
 //** Global textual link color.
 @link-color:            @brand-primary;
+@link-active-color:     @link-color;
 //** Link hover color set via `darken()` function.
 @link-hover-color:      darken(@link-color, 15%);
-
 
 //== Typography
 //
@@ -46,7 +46,7 @@
 //** By default, this inherits from the `<body>`.
 @headings-font-family:    @font-family-serif;
 @headings-font-weight:    500;
-@headings-line-height:    1.1;
+@headings-line-height:    1.35;
 @headings-color:          @gray-dark;
 
 
@@ -62,9 +62,12 @@
 //
 //## Define common padding and border radius sizes and more. Values based on 14px text and 1.428 line-height (~20px to start).
 
-@margin-sm: 10px;
-@margin-md: 20px;
-@margin-lg: 30px;
+@margin-xs:                  5px;
+@margin-sm:                 10px;
+@margin-md:                 20px;
+@margin-lg:                 30px;
+@margin-xl:                 40px;
+@margin-xxl:                50px;
 
 @padding-base-vertical:     5px;
 @padding-base-horizontal:   16px;
@@ -78,12 +81,24 @@
 @padding-xs-vertical:       1px;
 @padding-xs-horizontal:     5px;
 
+@padding-xs: 5px;
+@padding-sm: 10px;
+@padding-md: 20px;
+@padding-lg: 30px;
+@padding-xl: 40px;
+
 @line-height-large:         1.33;
 @line-height-small:         1.5;
 
 @border-radius-base:        3px;
 @border-radius-large:       5px;
 @border-radius-small:       2px;
+@border-width-base:         3px;
+@border-color-base:         @gray-lighter;
+
+@btn-switch-color:               @gray;
+@btn-switch-hover-color:         @gray-dark;
+
 //** Global color for active items (e.g., navs or dropdowns).
 @component-active-color:    #fff;
 //** Global background color for active items (e.g., navs or dropdowns).
@@ -324,6 +339,7 @@
 
 // Navbar links
 @navbar-default-link-color:                @link-color;
+@navbar-default-link-border-color:         @navbar-default-link-color;
 @navbar-default-link-hover-color:          @link-hover-color;
 @navbar-default-link-hover-bg:             @link-hover-color;
 @navbar-default-link-active-color:         #fff;
@@ -366,6 +382,9 @@
 @nav-tabs-justified-active-link-border-color:     @body-bg;
 
 //== Pills
+@nav-pills-link-color:                      @link-color;
+@nav-pills-link-hover-color:                @nav-link-hover-bg;
+@nav-pills-link-hover-bg:                   @nav-link-hover-bg;
 @nav-pills-border-radius:                   @border-radius-base;
 @nav-pills-active-link-hover-bg:            @component-active-bg;
 @nav-pills-active-link-hover-color:         @component-active-color;
@@ -407,6 +426,10 @@
 
 @pager-disabled-color:                 @pagination-disabled-color;
 
+
+// Plans
+@table-hover-bg:                       @gray-lightest;
+@plans-non-highlighted:                #fdfdfd;
 
 //== Jumbotron
 //
@@ -567,6 +590,10 @@
 @alert-danger-bg:             @state-danger-bg;
 @alert-danger-text:           @state-danger-text;
 @alert-danger-border:         @state-danger-border;
+
+@alert-alt-bg:               @state-info-bg;
+@alert-alt-text:             @state-info-text;
+@alert-alt-border:           @state-info-border;
 
 
 //== Progress bars
@@ -793,6 +820,7 @@
 @left-menu-animation-duration: 0.35s;
 
 @toolbar-border-color: @gray-lighter;
+@toolbar-header-btn-border-color: @toolbar-border-color;
 @common-border-color: @gray-lighter;
 @editor-border-color: @gray-lighter;
 @file-tree-droppable-bg-color: rgb(252, 231, 199);
@@ -831,7 +859,7 @@
 
 @dropdown-divider-margin    :((@line-height-computed / 2) - 1) 0;
 @dropdown-item-padding      : 3px 20px;
-
+@navbar-default-link-bg     : transparent;
 
 // Button colors and sizing
 @btn-border-radius-large : @border-radius-large;
@@ -856,6 +884,8 @@
 @sidebar-link-color            : #333;
 @sidebar-active-border-radius  : @border-radius-small;
 @sidebar-active-bg             : @link-color;
+@sidebar-active-color          : #FFF;
+@sidebar-active-font-weight    : 700;
 @sidebar-hover-bg              : transparent;
 @sidebar-hover-text-decoration : underline;
 
@@ -892,29 +922,30 @@
 @footer-padding                : 2em;
 
 // Editor header
-@ide-body-top-offset             : 40px;
-@toolbar-header-bg-color         : transparent;
-@toolbar-header-shadow           : 0 0 2px #ccc;
-@toolbar-btn-color               : @link-color;
-@toolbar-btn-hover-color         : @link-hover-color;
-@toolbar-btn-hover-bg-color      : darken(white, 10%);
-@toolbar-btn-hover-text-shadow   : 0 1px 0 rgba(0, 0, 0, 0.15);
-@toolbar-btn-active-color        : white;
-@toolbar-btn-active-bg-color     : @link-color;
-@toolbar-btn-active-shadow       : inset 0 3px 5px rgba(0, 0, 0, 0.225);
-@toolbar-font-size               : 12px;
-@toolbar-alt-bg-color            : #fafafa;
-@toolbar-icon-btn-color          : @gray-light;
-@toolbar-icon-btn-hover-color    : @gray-dark;
-@toolbar-icon-btn-hover-shadow   : 0 1px 0 rgba(0, 0, 0, 0.25);
-@toolbar-icon-btn-hover-boxshadow: inset 0 3px 5px rgba(0, 0, 0, 0.225);
-@toolbar-border-bottom           : 1px solid @toolbar-border-color;
-@toolbar-small-height            : 32px;
-@toolbar-tall-height             : 58px;
-@project-name-color              : @gray;
-@project-rename-link-color       : @gray-light;
-@project-rename-link-color-hover : @gray-dark;
-@global-alerts-padding           : (@line-height-computed / 4);
+@ide-body-top-offset                 : 40px;
+@toolbar-header-bg-color             : transparent;
+@toolbar-header-shadow               : 0 0 2px #ccc;
+@toolbar-header-branded-btn-bg-color : transparent;
+@toolbar-btn-color                   : @link-color;
+@toolbar-btn-hover-color             : @link-hover-color;
+@toolbar-btn-hover-bg-color          : darken(white, 10%);
+@toolbar-btn-hover-text-shadow       : 0 1px 0 rgba(0, 0, 0, 0.15);
+@toolbar-btn-active-color            : white;
+@toolbar-btn-active-bg-color         : @link-color;
+@toolbar-btn-active-shadow           : inset 0 3px 5px rgba(0, 0, 0, 0.225);
+@toolbar-font-size                   : 12px;
+@toolbar-alt-bg-color                : #fafafa;
+@toolbar-icon-btn-color              : @gray-light;
+@toolbar-icon-btn-hover-color        : @gray-dark;
+@toolbar-icon-btn-hover-shadow       : 0 1px 0 rgba(0, 0, 0, 0.25);
+@toolbar-icon-btn-hover-boxshadow    : inset 0 3px 5px rgba(0, 0, 0, 0.225);
+@toolbar-border-bottom               : 1px solid @toolbar-border-color;
+@toolbar-small-height                : 32px;
+@toolbar-tall-height                 : 58px;
+@project-name-color                  : @gray;
+@project-rename-link-color           : @gray-light;
+@project-rename-link-color-hover     : @gray-dark;
+@global-alerts-padding               : (@line-height-computed / 4);
 
 // Editor file-tree
 @file-tree-bg                    : transparent;
@@ -963,6 +994,7 @@
 @chat-new-message-bg              : @gray-lightest;
 @chat-new-message-textarea-bg     : #FFF;
 @chat-new-message-textarea-color  : @gray-dark;
+@chat-new-message-border-color    : @editor-border-color;
 
 // PDF
 @pdf-top-offset                  : @toolbar-tall-height;
@@ -986,14 +1018,18 @@
 @sys-msg-border     : 1px solid @common-border-color;
 
 // v2 History
-@history-base-font-size           : @font-size-small;
-@history-base-bg                  : @gray-lightest;
-@history-entry-day-bg             : @gray;
-@history-entry-selected-bg        : @red;
-@history-base-color               : @gray-light;
-@history-highlight-color          : @gray;
-@history-toolbar-bg-color         : @toolbar-alt-bg-color;
-@history-toolbar-color            : @text-color;
+@history-base-font-size                : @font-size-small;
+@history-base-bg                       : @gray-lightest;
+@history-entry-label-bg-color          : @red;
+@history-entry-label-color             : #FFF;
+@history-entry-selected-label-bg-color : #FFF;
+@history-entry-selected-label-color    : @red;
+@history-entry-day-bg                  : @gray;
+@history-entry-selected-bg             : @red;
+@history-base-color                    : @gray-light;
+@history-highlight-color               : @gray;
+@history-toolbar-bg-color              : @toolbar-alt-bg-color;
+@history-toolbar-color                 : @text-color;
 
 // Input suggestions
 @input-suggestion-v-offset        : 6px;

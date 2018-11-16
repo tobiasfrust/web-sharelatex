@@ -36,6 +36,7 @@ ProjectSchema = new Schema
 	deletedDocs       : [DeletedDocSchema]
 	deletedFiles      : [DeletedFileSchema]
 	imageName         : { type: String }
+	brandVariationId  : { type: String }
 	track_changes     : { type: Object }
 	tokens            :
 		readOnly        : {
@@ -64,6 +65,14 @@ ProjectSchema = new Schema
 		history         :
 			id            : { type: Number }
 			display       : { type: Boolean }
+	collabratecUsers	: [
+		{
+			user_id						: { type: ObjectId, ref:'User' }
+			collabratec_document_id		: { type: String }
+			collabratec_privategroup_id	: { type: String }
+			added_at					: { type: Date, default: () -> new Date() }
+		}
+	]
 
 ProjectSchema.statics.getProject = (project_or_id, fields, callback)->
 	if project_or_id._id?

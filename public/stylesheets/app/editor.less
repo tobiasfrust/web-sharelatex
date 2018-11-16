@@ -33,7 +33,7 @@
 .editor-menu-icon when (@is-overleaf = true) {
 	&.fa {
 		width: 1em;
-		background: url(/img/ol-brand/overleaf-o-white.svg) center / contain no-repeat;
+		background: @editor-header-logo-background;
 		
 		&::before {
 			// Disable the font-awesome icon when in Overleaf by replacing it with a
@@ -92,7 +92,10 @@
 .toolbar-editor {
 	height: @editor-toolbar-height;
 	background-color: @editor-toolbar-bg;
+	padding: 0 5px;
 	overflow: hidden;
+	position: relative;
+	z-index: 10; // Prevent track changes showing over toolbar
 }
 
 .loading-screen {
@@ -375,11 +378,11 @@ CodeMirror
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: @ui-resizer-size !important;;	
+	width: @ui-resizer-size !important;
 	height: 50px;
 	margin-top: -25px;
 	top: 50%;
-	z-index: 6;
+	z-index: 3;
 	background-color: @editor-toggler-bg-color;
 
 	&:hover,
@@ -645,4 +648,17 @@ CodeMirror
 	width: 100%;
 	height: auto;
 	border-bottom: 1px solid @modal-header-border-color;
+}
+
+.spell-check-menu {
+	> .dropdown-menu > li > a {
+		padding: 2px 15px;
+	}
+}
+
+.spell-check-menu-from-bottom {
+	> .dropdown-menu {
+		top: auto;
+		bottom: 100%;
+	}
 }

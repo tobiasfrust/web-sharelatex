@@ -98,7 +98,7 @@ script(type='text/ng-template', id='renameProjectModalTemplate')
 		) &times;
 		h3 #{translate("rename_project")}
 	.modal-body
-		.alert.alert-danger(ng-show="state.error.message") {{ state.error.message}} 
+		.alert.alert-danger(ng-show="state.error.message") {{state.error.message}}
 		.alert.alert-danger(ng-show="state.error && !state.error.message") #{translate("generic_something_went_wrong")}
 		form(name="renameProjectForm", novalidate)
 			input.form-control(
@@ -127,7 +127,7 @@ script(type='text/ng-template', id='cloneProjectModalTemplate')
 		) &times;
 		h3 #{translate("copy_project")}
 	.modal-body
-		.alert.alert-danger(ng-show="state.error.message") {{ state.error.message}} 
+		.alert.alert-danger(ng-show="state.error.message") {{state.error.message === "invalid element name" ? "#{translate("invalid_element_name")}" : state.error.message}}
 		.alert.alert-danger(ng-show="state.error && !state.error.message") #{translate("generic_something_went_wrong")}
 		form(name="cloneProjectForm", novalidate)
 			.form-group
@@ -161,7 +161,7 @@ script(type='text/ng-template', id='newProjectModalTemplate')
 		) &times;
 		h3 #{translate("new_project")}
 	.modal-body
-		.alert.alert-danger(ng-show="state.error.message") {{ state.error.message}} 
+		.alert.alert-danger(ng-show="state.error.message") {{state.error.message}}
 		.alert.alert-danger(ng-show="state.error && !state.error.message") #{translate("generic_something_went_wrong")}
 		form(novalidate, name="newProjectForm")
 			input.form-control(
@@ -192,11 +192,14 @@ script(type='text/ng-template', id='deleteProjectsModalTemplate')
 			ng-click="cancel()"
 		) &times;
 		h3(ng-if="action == 'delete'") #{translate("delete_projects")}
+		h3(ng-if="action == 'archive'") #{translate("archive_projects")}
 		h3(ng-if="action == 'leave'") #{translate("leave_projects")}
 		h3(ng-if="action == 'delete-and-leave'") #{translate("delete_and_leave_projects")}
+		h3(ng-if="action == 'archive-and-leave'") #{translate("archive_and_leave_projects")}
 	.modal-body
 		div(ng-show="projectsToDelete.length > 0")
-			p #{translate("about_to_delete_projects")}
+			p(ng-if="action == 'delete' || action == 'delete-and-leave'") #{translate("about_to_delete_projects")}
+			p(ng-if="action == 'archive' || action == 'archive-and-leave'") #{translate("about_to_archive_projects")}
 			ul
 				li(ng-repeat="project in projectsToDelete | orderBy:'name'")
 					strong {{project.name}}
@@ -256,6 +259,20 @@ script(type="text/ng-template", id="uploadProjectModalTemplate")
 		allowed-extensions="['zip']"
 		on-complete-callback="onComplete"
 	)
+	.modal-footer
+		button.btn.btn-default(ng-click="cancel()") #{translate("cancel")}
+
+script(type="text/ng-template", id="showErrorModalTemplate")
+	.modal-header
+		button.close(
+			type="button"
+			data-dismiss="modal"
+			ng-click="cancel()"
+		) &times;
+		h3 #{translate("generic_something_went_wrong")}
+	.modal-body
+		.alert.alert-danger(ng-show="error.message") {{error.message === "invalid element name" ? "#{translate("invalid_element_name")}" : error.message}}
+		.alert.alert-danger(ng-show="error && !error.message") #{translate("generic_something_went_wrong")}
 	.modal-footer
 		button.btn.btn-default(ng-click="cancel()") #{translate("cancel")}
 
@@ -320,73 +337,44 @@ script(type="text/ng-template", id="v1ImportModalTemplate")
 		h3 Move Project to Overleaf v2
 
 	.modal-body.v1-import-wrapper
-		.v1-import-step-1(ng-show="step === 1")
-			.v1-import-row
-				.v1-import-col
-					img.v1-import-img(
-						src="/img/v1-import/v2-editor.png"
-						alt="The new V2 Editor."
-					)
-				.v1-import-col
-					h2.v1-import-title Try the Overleaf v2 Editor
-					p The Overleaf v2 editor has many great new features including:
-					ul
-						li Faster real-time collaboration
-						li See your coauthors’ cursors
-						li Chat with math support
-						li Tracked changes and commenting
-						li Improved LaTeX autocomplete
-						li Two-way Dropbox sync
-			p.v1-import-cta Would you like to move #[strong {{project.name}}] into Overleaf v2?
-
-		.v1-import-step-2(ng-show="step === 2")
-			.v1-import-row
-				.v1-import-warning.v1-import-col(aria-label="Warning symbol.")
-					i.fa.fa-flask
-				.v1-import-col
-					h2.v1-import-title #[strong Warning:] Overleaf v2 is Experimental
-					p We are still working hard to bring some Overleaf v1 features to the v2 editor. In v2 there is:
-					ul
-						li <strong>No Journals and Services</strong> menu to submit directly to our partners yet
-						li <strong>No Rich Text (WYSIWYG)</strong> mode yet
-						li <strong>No linked files</strong> (to URLs or to files in other Overleaf projects) yet
-						li <strong>No Zotero and CiteULike</strong> integrations yet
-						li <strong>No labelled versions</strong> yet
-					p.row-spaced-small
-						| If you currently use the <strong>Overleaf Git bridge</strong> with your v1 project, you can migrate your project to the Overleaf v2 GitHub integration.
+		.v1-import-row
+			.v1-import-col.v1-import-col--left
+				img.v1-import-img(
+					src="/img/v1-import/v2-editor.png"
+					alt="The new V2 editor."
+				)
+			.v1-import-col
+				h2.v1-import-title #[strong Warning:] Some Overleaf v1 features aren't supported yet
+				p We are still working hard to bring some Overleaf v1 features to the v2 editor. In v2:
+				ul
+					li
+						| <strong>Direct git access to your projects</strong> is not yet available, but you can migrate your project to the Overleaf v2 GitHub integration
 						|
 						a(href='https://www.overleaf.com/help/343-working-offline-in-overleaf-v2', target='_blank') Read More.
-			.v1-import-cta
-				p
-					strong Please note: you cannot move this project back to v1 once you have moved it to v2. If this is an important project, please consider making a clone in v1 before you move the project to v2.
-				p Are you sure you want to move #[strong {{project.name}}] into Overleaf v2?
+					li There are <strong>no Zotero and CiteULike</strong> integrations yet
+					li Some <strong>Journals and Services in the Submit menu</strong> don't support direct submissions yet
+		.v1-import-cta
+			p
+				strong Please note: you cannot move this project back to v1 once you have moved it to v2.
+			p Are you sure you want to move #[strong {{project.name}}] into Overleaf v2?
 
 	.modal-footer.v1-import-footer
-		div(ng-show="step === 1")
+		form(
+			async-form="v1Import",
+			name="v1ImportForm",
+			action="{{'/overleaf/project/'+ project.id + '/import'}}"
+			method="POST"
+			ng-cloak
+		)
+			input(name='_csrf', type='hidden', value=csrfToken)
+			form-messages(for="v1ImportForm")
 			if settings.overleaf && settings.overleaf.host
 				a.btn.btn-primary.v1-import-btn(
-					ng-href=settings.overleaf.host + "/{{project.id}}"
+					ng-href='/sign_in_to_v1?return_to=/{{project.id}}'
+					ng-class="{disabled: v1ImportForm.inflight || v1ImportForm.response.success}"
 				) No thanks, open in v1
-			button.btn.btn-primary.v1-import-btn(
-				ng-click="moveToConfirmation()"
-			) Yes, move project to v2
-		div(ng-show="step === 2")
-			form(
-				async-form="v1Import",
-				name="v1ImportForm",
-				action="{{'/overleaf/project/'+ project.id + '/import'}}"
-				method="POST"
-				ng-cloak
+			input.btn.btn-primary.v1-import-btn(
+				type="submit",
+				value="Yes, move project to v2"
+				ng-disabled="v1ImportForm.inflight || v1ImportForm.response.success"
 			)
-				input(name='_csrf', type='hidden', value=csrfToken)
-				form-messages(for="v1ImportForm")
-				if settings.overleaf && settings.overleaf.host
-					a.btn.btn-primary.v1-import-btn(
-						ng-href=settings.overleaf.host + "/{{project.id}}"
-						ng-class="{disabled: v1ImportForm.inflight || v1ImportForm.response.success}"
-					) No thanks, open in v1
-				input.btn.btn-primary.v1-import-btn(
-					type="submit",
-					value="Yes, move project to v2"
-					ng-disabled="v1ImportForm.inflight || v1ImportForm.response.success"
-				)

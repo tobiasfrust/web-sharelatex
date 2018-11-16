@@ -19,6 +19,8 @@ describe "UserRegistrationHandler", ->
 		@UserCreator = 
 			createNewUser:sinon.stub().callsArgWith(1, null, @user)
 		@AuthenticationManager =
+			validateEmail: sinon.stub().returns(null)
+			validatePassword: sinon.stub().returns(null)
 			setUserPassword: sinon.stub().callsArgWith(2)
 		@NewsLetterManager =
 			subscribe: sinon.stub().callsArgWith(1)
@@ -44,28 +46,25 @@ describe "UserRegistrationHandler", ->
 
 
 	describe 'validate Register Request', ->
-
-
-		it 'allow working account through', ->
+		it 'allows passing validation through', ->
 			result = @handler._registrationRequestIsValid @passingRequest
 			result.should.equal true
-		
-		it 'not allow not valid email through ', ()->
-			@passingRequest.email = "notemail"
-			result = @handler._registrationRequestIsValid @passingRequest
-			result.should.equal false
 
-		it 'not allow no email through ', ->
-			@passingRequest.email = ""
-			result = @handler._registrationRequestIsValid @passingRequest
-			result.should.equal false
-		
-		it 'not allow no password through ', ()->
-			@passingRequest.password= ""
-			result = @handler._registrationRequestIsValid @passingRequest
-			result.should.equal false
+		describe 'failing email validation', ->
+			beforeEach ->
+				@AuthenticationManager.validateEmail.returns({ message: 'email not set' })
 
+			it 'does not allow through', ->
+				result = @handler._registrationRequestIsValid @passingRequest
+				result.should.equal false
 
+		describe 'failing password validation', ->
+			beforeEach ->
+				@AuthenticationManager.validatePassword.returns({ message: 'password is too short' })
+
+			it 'does not allow through', ->
+				result = @handler._registrationRequestIsValid @passingRequest
+				result.should.equal false
 
 	describe "registerNewUser", ->
 
@@ -132,9 +131,15 @@ describe "UserRegistrationHandler", ->
 					@AuthenticationManager.setUserPassword.calledWith(@user._id, @passingRequest.password).should.equal true
 					done()			
 
-			it "should add the user to the news letter manager", (done)->
+			it "should add the user to the newsletter if accepted terms", (done)->
+				@passingRequest.subscribeToNewsletter = "true"
 				@handler.registerNewUser @passingRequest, (err)=>
 					@NewsLetterManager.subscribe.calledWith(@user).should.equal true
+					done()
+
+			it "should not add the user to the newsletter if not accepted terms", (done)->
+				@handler.registerNewUser @passingRequest, (err)=>
+					@NewsLetterManager.subscribe.calledWith(@user).should.equal false
 					done()
 
 			it "should track the registration event", (done)->

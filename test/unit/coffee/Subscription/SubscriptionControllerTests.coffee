@@ -39,7 +39,7 @@ describe "SubscriptionController", ->
 			findLocalPlanInSettings: sinon.stub()
 
 		@LimitationsManager =
-			userHasSubscriptionOrIsGroupMember: sinon.stub()
+			hasPaidSubscription: sinon.stub()
 			userHasV1OrV2Subscription : sinon.stub()
 			userHasV2Subscription: sinon.stub()
 
@@ -77,6 +77,7 @@ describe "SubscriptionController", ->
 			"../User/UserGetter": @UserGetter
 			"./RecurlyWrapper": @RecurlyWrapper = {}
 			"./FeaturesUpdater": @FeaturesUpdater = {}
+			"./GroupPlansData": @GroupPlansData = {}
 
 
 		@res = new MockResponse()
@@ -100,14 +101,6 @@ describe "SubscriptionController", ->
 				@UserGetter.getUser.callCount.should.equal 1
 				done()
 
-			it 'should decide not to AB test the plans when signed up before 2018-06-06', (done) ->
-				# Users before we introduce the test may have already seen the old variant, 
-				# and so may react positively to a change rather than the variant itself. 
-				# So it's more likely to skew in favour of the change
-				# just because change makes things 'fresh'
-				@res.renderedVariables.shouldABTestPlans.should.equal false
-				done()
-
 			describe 'not dependant on logged in state', (done) ->
 				# these could have been put in 'when user is not logged in' too
 				it "should set the recommended currency from the geoiplookup", (done)->
@@ -115,7 +108,6 @@ describe "SubscriptionController", ->
 					@GeoIpLookup.getCurrencyCode.calledWith(@req.ip).should.equal true
 					done()
 				it 'should include data for features table', (done) ->
-					# this is part of AB test. If default wins test, then remove this test
 					@res.renderedVariables.planFeatures.length.should.not.equal 0
 					done()
 
@@ -144,14 +136,12 @@ describe "SubscriptionController", ->
 					"../User/UserGetter": @UserGetter
 					"./RecurlyWrapper": @RecurlyWrapper = {}
 					"./FeaturesUpdater": @FeaturesUpdater = {}
+					"./GroupPlansData": @GroupPlansData
+
 				@SubscriptionController.plansPage(@req, @res)
 
 			it 'should not fetch the current user', (done) ->
 				@UserGetter.getUser.callCount.should.equal 0
-				done()
-
-			it 'should decide to AB test', (done) ->
-				@res.renderedVariables.shouldABTestPlans.should.equal true
 				done()
 
 	describe "paymentPage", ->
@@ -239,7 +229,7 @@ describe "SubscriptionController", ->
 		describe "with a user without a subscription", ->
 			beforeEach (done) ->
 				@res.callback = done
-				@LimitationsManager.userHasSubscriptionOrIsGroupMember.callsArgWith(1, null, false)
+				@LimitationsManager.hasPaidSubscription.callsArgWith(1, null, false)
 				@SubscriptionController.userSubscriptionPage @req, @res
 
 			it "should redirect to the plans page", ->
@@ -254,7 +244,7 @@ describe "SubscriptionController", ->
 			describe "without an existing subscription", ->
 				beforeEach (done)->
 					@res.callback = done
-					@LimitationsManager.userHasSubscriptionOrIsGroupMember.callsArgWith(1, null, false)
+					@LimitationsManager.hasPaidSubscription.callsArgWith(1, null, false)
 					@SubscriptionController.userSubscriptionPage @req, @res
 
 				it "should redirect to the group invite url", ->
@@ -266,7 +256,7 @@ describe "SubscriptionController", ->
 					@res.callback = done
 					@settings.apis.recurly.subdomain = 'test'
 					@userSub = {account: {hosted_login_token: 'abcd'}}
-					@LimitationsManager.userHasSubscriptionOrIsGroupMember
+					@LimitationsManager.hasPaidSubscription
 						.callsArgWith(1, null, true, {})
 					@SubscriptionController.userSubscriptionPage @req, @res
 
@@ -278,7 +268,7 @@ describe "SubscriptionController", ->
 			beforeEach (done) ->
 				@res.callback = done
 				@SubscriptionViewModelBuilder.buildUsersSubscriptionViewModel.callsArgWith(1, null, @activeRecurlySubscription)
-				@LimitationsManager.userHasSubscriptionOrIsGroupMember.callsArgWith(1, null, true, {})
+				@LimitationsManager.hasPaidSubscription.callsArgWith(1, null, true, {})
 				@SubscriptionController.userSubscriptionPage @req, @res
 
 			it "should render the dashboard", (done)->
@@ -293,7 +283,7 @@ describe "SubscriptionController", ->
 			beforeEach (done) ->
 				@res.callback = done
 				@SubscriptionViewModelBuilder.buildUsersSubscriptionViewModel.callsArgWith(1, null, @activeRecurlySubscription)
-				@LimitationsManager.userHasSubscriptionOrIsGroupMember.callsArgWith(1, null, true, {})
+				@LimitationsManager.hasPaidSubscription.callsArgWith(1, null, true, {})
 				@SubscriptionController.userSubscriptionPage @req, @res
 
 			it "should render the dashboard", ->
@@ -305,7 +295,7 @@ describe "SubscriptionController", ->
 
 		describe "when its a custom subscription which is non recurly", ->
 			beforeEach ()->
-				@LimitationsManager.userHasSubscriptionOrIsGroupMember.callsArgWith(1, null, true, {customAccount:true})
+				@LimitationsManager.hasPaidSubscription.callsArgWith(1, null, true, {customAccount:true})
 				@SubscriptionController.userSubscriptionPage @req, @res
 
 			it "should redirect to /user/subscription/custom_account", ->
@@ -314,7 +304,7 @@ describe "SubscriptionController", ->
 	describe "userCustomSubscriptionPage", ->
 		beforeEach (done) ->
 			@res.callback = done
-			@LimitationsManager.userHasSubscriptionOrIsGroupMember.callsArgWith(1, null, true, {})
+			@LimitationsManager.hasPaidSubscription.callsArgWith(1, null, true, {})
 			@SubscriptionController.userCustomSubscriptionPage @req, @res
 
 		it "should render the page", (done)->

@@ -1,4 +1,43 @@
 .modal-body-publish {
+    @label-column-width: 10em;
+    @control-left-margin: 1.0em;
+    .form-control-box {
+      margin-bottom: 1.5ex;
+      margin-left: @control-left-margin;
+      label {
+        display: inline-block;
+        width: @label-column-width;
+        vertical-align: baseline;
+      }
+      label.checkbox-label {
+        width: auto;
+      }
+      .form-control {
+        display: inline-block;
+        width: 60%;
+      }
+      input[type="checkbox"] {
+        margin-right: 0.5em;
+      }
+      textarea {
+        vertical-align: baseline;
+      }
+      select {
+        padding-top: 1ex;
+        padding-bottom: 1ex;
+        padding-left: 1em;
+        padding-right: 1em;
+      }
+      option {
+        margin-left: -4px;
+      }
+      a.help {
+        margin-left: 0.6em;
+      }
+    }
+    .no-label {
+      margin-left: @label-column-width + @control-left-margin;
+    }
 		#search-input-container {
 				overflow: hidden;
 				margin: 5px 0 10px;
@@ -22,6 +61,9 @@
 		}
 		.wl-icon:before{
 				font-size: 14px;
+		}
+		.btn-wrapping{
+				white-space: normal;
 		}
 		.button-as-link{
          color: green;

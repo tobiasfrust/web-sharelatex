@@ -438,6 +438,7 @@
   .alert-link-as-btn when (@is-overleaf = true) {
     display: inline-block;
     font-weight: bold;
+    text-decoration: none;
     .button-variant(#FFF, shade(@background, 20%), transparent);
     .button-size(@padding-xs-vertical; @padding-small-horizontal; @font-size-small; @line-height-small; @btn-border-radius-small);
     &:hover {
@@ -511,6 +512,10 @@
   background-color: @background;
   border-color: @border;
 
+  .alert & when (@is-overleaf = true) {
+      background-color: darken(@background, 16%);
+  }
+
   &:hover,
   &:focus,
   &:active,
@@ -520,6 +525,9 @@
     color: @color;
     background-color: darken(@background, 8%);
         border-color: darken(@border, 12%);
+      .alert & when (@is-overleaf = true) {
+          background-color: darken(@background, 24%);
+      }
   }
   &:active,
   &.active,
@@ -541,6 +549,51 @@
 
   .badge {
     color: @background;
+    background-color: @color;
+  }
+}
+.button-outline-variant(@color) {
+  color: @color;
+  background-color: transparent;
+  border-color: @color;
+
+  .alert & when (@is-overleaf = true) {
+    background-color: transparent;
+  }
+
+  &:hover,
+  &:focus,
+  &:active,
+  &.active,
+  &.checked,
+  .open .dropdown-toggle& {
+    color: @color;
+    background-color: transparent;
+    border-color: darken(@color, 12%);
+    .alert & when (@is-overleaf = true) {
+      background-color: transparent;
+    }
+  }
+  &:active,
+  &.active,
+  .open .dropdown-toggle& {
+    background-image: none;
+  }
+  &.disabled,
+  &[disabled],
+  fieldset[disabled] & {
+    &,
+    &:hover,
+    &:focus,
+    &:active,
+    &.active {
+      background-color: transparent;
+      border-color: @color;
+    }
+  }
+
+  .badge {
+    color: transparent;
     background-color: @color;
   }
 }

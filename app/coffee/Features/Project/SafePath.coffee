@@ -1,5 +1,5 @@
 # This file is shared between the frontend and server code of web, so that
-# filename validation is the same in both implementations.  
+# filename validation is the same in both implementations.
 # Both copies must be kept in sync:
 #   app/coffee/Features/Project/SafePath.coffee
 #   public/coffee/ide/directives/SafePath.coffee
@@ -52,20 +52,36 @@ load = () ->
 	MAX_PATH = 1024 # Maximum path length, in characters. This is fairly arbitrary.
 
 	SafePath =
+		# convert any invalid characters to underscores in the given filename
 		clean: (filename) ->
 			filename = filename.replace BADCHAR_RX, '_'
 			# for BADFILE_RX replace any matches with an equal number of underscores
-			filename = filename.replace BADFILE_RX, (match) -> 
+			filename = filename.replace BADFILE_RX, (match) ->
 				return new Array(match.length + 1).join("_")
 			# replace blocked filenames 'prototype' with '@prototype'
 			filename = filename.replace BLOCKEDFILE_RX, "@$1"
 			return filename
 
+		# returns whether the filename is 'clean' (does not contain any invalid
+		# characters or reserved words)
 		isCleanFilename: (filename) ->
 			return SafePath.isAllowedLength(filename) &&
-				not filename.match(BADCHAR_RX) &&
-				not filename.match(BADFILE_RX) &&
-				not filename.match(BLOCKEDFILE_RX)
+				!BADCHAR_RX.test(filename) &&
+				!BADFILE_RX.test(filename) &&
+				!BLOCKEDFILE_RX.test(filename)
+
+		# returns whether a full path is 'clean' - e.g. is a full or relative path
+		# that points to a file, and each element passes the rules in 'isCleanFilename'
+		isCleanPath: (path) ->
+			elements = path.split('/')
+
+			lastElementIsEmpty = elements[elements.length - 1].length == 0
+			return false if lastElementIsEmpty
+
+			for element in elements
+				return false if element.length > 0 && !SafePath.isCleanFilename element
+
+			return true
 
 		isAllowedLength: (pathname) ->
 			return pathname.length > 0 && pathname.length <= MAX_PATH

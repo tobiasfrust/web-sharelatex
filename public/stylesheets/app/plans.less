@@ -3,6 +3,99 @@
 		color: @gray-dark;
 		margin-bottom: @line-height-computed;
 	}
+	.best-value {
+		color: @brand-secondary;
+		line-height: @line-height-computed;
+		text-transform: capitalize;
+	}
+	blockquote {
+		footer{
+			/* accessibility fix */
+			color: @gray-med;
+		}
+	}
+	.btn-header {
+		font-family: @font-family-sans-serif;
+		margin-left: 10px;
+		margin-top: -10px;
+		text-shadow: 0 0 0;
+	}
+	.card .btn { white-space:normal; }
+	.card.features {
+		margin-top: @line-height-computed;
+		i {
+			color: @red;
+		}
+		p {
+			margin: 0;
+		}
+	}
+	.btn-header {
+		font-family: @font-family-sans-serif;
+		margin-left: 10px;
+		margin-top: -10px;
+		text-shadow: 0 0 0;
+	}
+	.card .btn { white-space:normal; }
+	.card-group {
+		.card-highlighted {
+			padding-top: @line-height-computed * 2;
+			padding-bottom: @line-height-computed * 2;
+		}
+	}
+	.card-first, .card-last {
+		background: @plans-non-highlighted;
+	}
+	.card-highlighted {
+		border: @border-width-base solid @border-color-base;
+		padding-top: 10px!important;
+		.best-value {
+			margin-bottom: 15px;
+		}
+		.card-header {
+			padding-bottom: 22px; /* align hr with other plans */
+		}
+	}
+	.card-header {
+		margin-bottom: 15px;
+	}
+	.circle {
+		font-size: 1.5rem;
+		font-weight: 700;
+		padding: 46px 18px;
+		margin: 0 auto @line-height-computed;
+		text-shadow: 0 -1px 1px darken(@link-color, 10%);
+		width: 120px;
+		height: 120px;
+		border-radius: 50%;
+		background-color: @brand-secondary;
+		color: white;
+		white-space: nowrap;
+		line-height: 1;
+		span.small {
+			color: rgba(255, 255, 255, 0.85);
+			font-size: @font-size-base * .8;
+		}
+	}
+	.circle-lg {
+		width: 150px;
+		height: 150px;
+		padding-top: 50px;
+	}
+	.circle-subtext {
+		font-size: 1rem;
+	}
+	.circle-img {
+		float: right;
+	}
+	.faq {
+		p {
+			margin: 0
+		}
+	}
+	.header-with-btn {
+		line-height: 1.6;
+	}
 	.plans-header{
 		h1, h2, p {
 			text-shadow: 0 -1px 1px white;
@@ -17,38 +110,8 @@
 	.plans-subheader {
 		margin-bottom: @line-height-computed;
 	}
-	.card.features {
-		margin-top: @line-height-computed;
-		i {
-			color: @red;
-		}
-		p {
-			margin: 0;
-		}
-	}
-	.card-group {
-		.card-highlighted {
-			padding-top: @line-height-computed * 2;
-			padding-bottom: @line-height-computed * 2;
-		}
-	}
-
-	.circle {
-		font-size: 1.5rem;
-		font-weight: 700;
-		padding: 38px 18px;
-		margin: 0 auto @line-height-computed;
-		text-shadow: 0 -1px 1px darken(@link-color, 10%);
-		width: 120px;
-		height: 120px;
-		border-radius: 50%;
-		background-color: @red;
-		color: white;
-		white-space: nowrap;
-		span.small {
-			color: rgba(255, 255, 255, 0.75);
-			font-size: @font-size-base * .8;
-		}
+	.tagline {
+		margin-bottom: 20px;
 	}
 	ul.nav-pills {
 		text-align: center;
@@ -59,14 +122,6 @@
 		}
 		> li + li {
 			margin-left: @line-height-computed / 2;
-		}
-	}
-
-	.card .btn { white-space:normal; }
-
-	.top-switch {
-		.currency-dropdown {
-			margin-right: -15px;
 		}
 	}
 }
@@ -98,127 +153,45 @@
 
 }
 
-.feature {
-	margin-top: (@line-height-computed / 2);
-	margin-bottom: (@line-height-computed / 1.5);
-}
-
-.features-check,
-.features-copy {
-	display: inline-block;
-	width: 12%;
-	line-height: 1.4;
-	vertical-align: top;
-}
-
-.features-copy {
-	width: 88%;
-}
-
-
 .plansPageStudentLink {
 	margin-left: 20px;
 	margin-top: 20px;
-}
-
-input.paymentTypeOption.ng-valid {
-	margin-top: 15px;
-}
-
-.totalPrice {
-	padding-top: 15px;
-}
-
-.pricingBreakdown {
-	text-align: right;
 }
 
 /**
 	Plans Test
 */
 @best-val-height: 35px;
-@highlight-border: 3px;
-@highlight-color: #d3584b;
+@border-width-base: 3px;
 @gray-med: #6d6d6d;
-@white-med: #fdfdfd;
-.more-details {
-	.best-value {
-		color: @red;
-		line-height: @line-height-computed;
-	}
-	blockquote {
-		footer{
-			/* accessibility fix */
-			color: @gray-med;
-		}
-	}
-	.btn-header {
-		font-family: @font-family-sans-serif;
-		margin-left: 10px;
-		margin-top: -10px;
-		text-shadow: 0 0 0;
-	}
-	.card-first, .card-last {
-		background: @white-med;
-	}
-	.card-highlighted {
-		border: @highlight-border solid @gray-lighter;
-		padding-top: 10px!important;
-		.best-value {
-			margin-bottom: 15px;
-		}
-		.card-header {
-			padding-bottom: 22px; /* align hr with other plans */
-		}
-	}
-	.card-header {
-		margin-bottom: 15px;
-	}
-	.circle {
-		/* accessibility fix */
-		span.small {
-			color: rgba(255, 255, 255, 0.85)
-		}
-	}
-	.circle-img {
-		border-radius: 50%;
-		float: right;
-		height: 100px;
-		overflow: hidden;
-		position: relative;
-		width: 100px;
-		img {
-			display: inline;
-			margin: 0 auto;
-			width: 100%;
-		}
-	}
-	.faq:last-child {
-		p {
-			margin-bottom: 0;
-		}
-	}
-	.questions-header {
-		color: @red;
-		line-height: 37px;
-		margin: 0;
-		text-align: right;
-	}
-	.tagline {
-		margin-bottom: 20px;
-	}
-	/* Media Queries */
-	@media (max-width: @screen-md-min) {
-		.card-highlighted {
+
+/* Media Queries */
+@media (max-width: @screen-sm-max) {
+	.plans {
+		.card-group {
 			/*override style in cards.less */
-			margin-top: @line-height-computed!important;
+			.card {
+				margin-left: 0;
+				margin-right: 0;
+			}
+			.card-highlighted {
+				margin-top: @line-height-computed!important;
+			}
 		}
 		.circle-img {
 			float: left;
 			margin: 0 15px;
 		}
-	}
-	@media (min-width: @screen-md-min) {
+		ul.nav-pills {
+			margin-bottom: @margin-xs;
+			li {
+				margin-bottom: @margin-sm;
+			}
+		}
+	} 
+}
+@media (min-width: @screen-md-min) {
+	.plans {
 		blockquote {
 			margin-bottom: 0;
 		}
@@ -227,6 +200,11 @@ input.paymentTypeOption.ng-valid {
 				h3 {
 					margin-top: 0;
 				}
+			}
+		}
+		.top-switch {
+			.currency-dropdown {
+				margin-right: -15px;
 			}
 		}
 	}
@@ -243,7 +221,7 @@ input.paymentTypeOption.ng-valid {
 */
 .plans-table {
 	border: 1px solid @gray-lighter;
-	background-color: @white-med;
+	background-color: @plans-non-highlighted;
 	margin: @best-val-height 0 15px 0;
 	table-layout: fixed;
 	width: 100%;
@@ -266,8 +244,9 @@ input.paymentTypeOption.ng-valid {
 		border-top: 0;
 		font-family: @headings-font-family;
 		font-size: @font-size-h2;
-	  font-weight: @headings-font-weight;
-	  line-height: @headings-line-height;
+		font-weight: @headings-font-weight;
+		hyphens: auto;
+		line-height: @headings-line-height;
 		padding: 18px;
 	}
 
@@ -297,13 +276,13 @@ input.paymentTypeOption.ng-valid {
 			border-bottom: 0;
 			padding: 18px;
 		}
-			/* highlighted column */
+		/* highlighted column */
 		td:nth-child(3) {
 			position: relative;
 			/* keep here position here, otherwise messes up border on safari when there is a bg color */
 			&:before {
 				/* needed for safafi */
-				border-top: 1px solid @gray-lighter;
+				border-top: 1px solid @border-color-base;
 				content: '';
 				left: 0;
 				position: absolute;
@@ -328,17 +307,17 @@ input.paymentTypeOption.ng-valid {
 	/* highlighted column */
 	td:nth-child(3), th:nth-child(3) {
 		background-color: white;
-		border-left: @highlight-border solid @gray-lighter;
-		border-right: @highlight-border solid @gray-lighter;
+		border-left: @border-width-base solid @border-color-base;
+		border-right: @border-width-base solid @border-color-base;
 	}
 	.outer {
-		left: -@highlight-border;
-		right: -@highlight-border;
+		left: -@border-width-base;
+		right: -@border-width-base;
 		position: absolute;
 
 		.outer-content {
 			background: white;
-			border: @highlight-border solid @gray-lighter;
+			border: @border-width-base solid @border-color-base;
 			border-radius: @border-radius-base;
 			font-size: @font-size-base;
 			font-family: @font-family-sans-serif;
@@ -368,7 +347,7 @@ input.paymentTypeOption.ng-valid {
 	/* highlight rows on hover */
 	tr:hover {
 		td {
-			background-color: @gray-lightest;
+			background-color: @table-hover-bg;
 		}
 	}
 	tr:first-child:hover {
@@ -383,11 +362,40 @@ input.paymentTypeOption.ng-valid {
 
 	/* tooltip */
 	sup {
-		color: @red;
+		color: @brand-secondary;
 		cursor: pointer;
 		margin-left: 5px;
 	}
 	.tooltip.in {
 		min-width: 200px
+	}
+
+	/* Media Queries */
+	@media (max-width: @screen-sm-max) {
+		font-size: @font-size-small;
+		hyphens: auto;
+		margin-top: @best-val-height*2;
+		th {
+			font-size: @font-size-base;
+			padding-left: @padding-xs;
+			padding-right: @padding-xs;
+		}
+		td:first-child {
+			padding-left: @padding-xs;
+		}
+		tr:last-child {
+			td {
+				padding: @padding-xs;
+				.btn {
+					word-break: normal;
+				}
+			}
+		}
+		.best-value {
+			line-height: 1;
+		}
+		.btn {
+			font-size: @font-size-small;
+		}
 	}
 }

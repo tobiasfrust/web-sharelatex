@@ -27,30 +27,29 @@ module.exports = TeamInvitesHandler =
 			invite = subscription.teamInvites.find (i) -> i.token == token
 			return callback(null, invite, subscription)
 
-	createInvite: (teamManagerId, email, callback) ->
+	createInvite: (teamManagerId, subscription, email, callback) ->
 		email = EmailHelper.parseEmail(email)
 		return callback(new Error('invalid email')) if !email?
 		logger.log {teamManagerId, email}, "Creating manager team invite"
 		UserGetter.getUser teamManagerId, (error, teamManager) ->
 			return callback(error) if error?
 
-			SubscriptionLocator.getUsersSubscription teamManagerId, (error, subscription) ->
+			if teamManager.first_name and teamManager.last_name
+				inviterName = "#{teamManager.first_name} #{teamManager.last_name} (#{teamManager.email})"
+			else
+				inviterName = teamManager.email
+
+			removeLegacyInvite subscription.id, email, (error) ->
 				return callback(error) if error?
-
-				if teamManager.first_name and teamManager.last_name
-					inviterName = "#{teamManager.first_name} #{teamManager.last_name} (#{teamManager.email})"
-				else
-					inviterName = teamManager.email
-
-				removeLegacyInvite subscription.id, email, (error) ->
-					return callback(error) if error?
-					createInvite(subscription, email, inviterName, callback)
+				createInvite(subscription, email, inviterName, callback)
 
 	createDomainInvite: (user, licence, callback) ->
 		email = EmailHelper.parseEmail(user.email)
 		return callback(new Error('invalid email')) if !email?
 		logger.log {licence, email: email}, "Creating domain team invite"
-		inviterName = licence.name.replace(/\s+licence$/i, licence.name)
+		# If name == 'Uni of X License', make the email read only
+		# 'Uni of X has invited you...'
+		inviterName = licence.name.replace(/\s+(site\s+)?licence$/i, '')
 
 		SubscriptionLocator.getSubscription licence.subscription_id, (error, subscription) ->
 			return callback(error) if error?
@@ -81,14 +80,11 @@ module.exports = TeamInvitesHandler =
 
 				removeInviteFromTeam(subscription.id, invite.email, callback)
 
-	revokeInvite: (teamManagerId, email, callback) ->
+	revokeInvite: (teamManagerId, subscription, email, callback) ->
 		email = EmailHelper.parseEmail(email)
 		return callback(new Error('invalid email')) if !email?
 		logger.log {teamManagerId, email}, "Revoking invite"
-		SubscriptionLocator.getUsersSubscription teamManagerId, (err, teamSubscription) ->
-			return callback(err) if err?
-
-			removeInviteFromTeam(teamSubscription.id, email, callback)
+		removeInviteFromTeam(subscription.id, email, callback)
 
 	# Legacy method to allow a user to receive a confirmation email if their
 	# email is in Subscription.invited_emails when they join. We'll remove this
@@ -98,7 +94,7 @@ module.exports = TeamInvitesHandler =
 			return callback(err) if err?
 
 			async.map teams,
-				(team, cb) -> TeamInvitesHandler.createInvite(team.admin_id, email, cb)
+				(team, cb) -> TeamInvitesHandler.createInvite(team.admin_id, team, email, cb)
 			, callback
 
 createInvite = (subscription, email, inviterName, callback) ->

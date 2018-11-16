@@ -33,7 +33,7 @@ module.exports = SubscriptionUpdater =
 		searchOps =
 			_id: subscriptionId
 		insertOperation =
-			{ $push: { member_ids: { $each: memberIds } } }
+			{ $addToSet: { member_ids: { $each: memberIds } } }
 
 		Subscription.findAndModify searchOps, insertOperation, (err, subscription) ->
 			return callback(err) if err?
@@ -55,7 +55,10 @@ module.exports = SubscriptionUpdater =
 			if err?
 				logger.err err:err, searchOps:searchOps, removeOperation:removeOperation, "error removing user from group"
 				return callback(err)
-			FeaturesUpdater.refreshFeatures user_id, callback
+			UserGetter.getUserOrUserStubById user_id, {}, (error, user, isStub) ->
+				return callback(error) if error
+				return callback() if isStub
+				FeaturesUpdater.refreshFeatures user_id, callback
 
 	deleteWithV1Id: (v1TeamId, callback)->
 		Subscription.deleteOne { "overleaf.id": v1TeamId }, callback

@@ -1,5 +1,7 @@
 ProjectGetter = require('../Project/ProjectGetter')
+ProjectHistoryHandler = require('../Project/ProjectHistoryHandler')
 ProjectLocator = require('../Project/ProjectLocator')
+ProjectRootDocManager = require('../Project/ProjectRootDocManager')
 UserGetter = require('../User/UserGetter')
 logger = require('logger-sharelatex')
 settings = require 'settings-sharelatex'
@@ -20,20 +22,23 @@ module.exports = ExportsHandler = self =
 				callback null, export_data
 
 	_buildExport: (export_params, callback=(err, export_data) ->) ->
-		project_id = export_params.project_id
-		user_id = export_params.user_id
-		brand_variation_id = export_params.brand_variation_id
+		{project_id, user_id, brand_variation_id, title, description, author,
+			license, show_source} = export_params
 		jobs =
 			project: (cb) ->
 				ProjectGetter.getProject project_id, cb
 			# TODO: when we update async, signature will change from (cb, results) to (results, cb)
 			rootDoc: [ 'project', (cb, results) ->
-				ProjectLocator.findRootDoc {project: results.project, project_id: project_id}, cb
+				ProjectRootDocManager.ensureRootDocumentIsValid project_id, (error) ->
+					return callback(error) if error?
+					ProjectLocator.findRootDoc {project: results.project, project_id: project_id}, cb
 			]
 			user: (cb) ->
 				UserGetter.getUser user_id, {first_name: 1, last_name: 1, email: 1, overleaf: 1}, cb
 			historyVersion: (cb) ->
-				self._requestVersion project_id, cb
+				ProjectHistoryHandler.ensureHistoryExistsForProject project_id, (error) ->
+					return callback(error) if error?
+					self._requestVersion project_id, cb
 
 		async.auto jobs, (err, results) ->
 			if err?
@@ -57,6 +62,14 @@ module.exports = ExportsHandler = self =
 					historyId: project.overleaf?.history?.id
 					historyVersion: historyVersion
 					v1ProjectId: project.overleaf?.id
+					metadata:
+						compiler: project.compiler
+						imageName: project.imageName
+						title: title
+						description: description
+						author: author
+						license: license
+						showSource: show_source
 				user:
 					id: user_id
 					firstName: user.first_name
@@ -114,4 +127,19 @@ module.exports = ExportsHandler = self =
 			else
 				err = new Error("v1 export returned a failure status code: #{res.statusCode}")
 				logger.err err:err, export:export_id, "v1 export returned failure status code: #{res.statusCode}"
+				callback err
+
+	fetchDownload: (export_id, type, callback=(err, file_url) ->) ->
+		request.get {
+			url: "#{settings.apis.v1.url}/api/v1/sharelatex/exports/#{export_id}/#{type}_url"
+			auth: {user: settings.apis.v1.user, pass: settings.apis.v1.pass }
+		}, (err, res, body) ->
+			if err?
+				logger.err err:err, export:export_id, "error making request to v1 export"
+				callback err
+			else if 200 <= res.statusCode < 300
+				callback null, body
+			else
+				err = new Error("v1 export returned a failure status code: #{res.statusCode}")
+				logger.err err:err, export:export_id, "v1 export zip fetch returned failure status code: #{res.statusCode}"
 				callback err

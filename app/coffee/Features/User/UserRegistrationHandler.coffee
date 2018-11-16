@@ -1,4 +1,3 @@
-sanitize = require('sanitizer')
 User = require("../../models/User").User
 UserCreator = require("./UserCreator")
 UserGetter = require("./UserGetter")
@@ -14,17 +13,10 @@ settings = require "settings-sharelatex"
 EmailHelper = require("../Helpers/EmailHelper")
 
 module.exports = UserRegistrationHandler =
-	hasZeroLengths : (props) ->
-		hasZeroLength = false
-		props.forEach (prop) ->
-			if prop.length == 0
-				hasZeroLength = true
-		return hasZeroLength
-
 	_registrationRequestIsValid : (body, callback)->
-		email = EmailHelper.parseEmail(body.email) or ''
-		password = body.password
-		if @hasZeroLengths([password, email])
+		invalidEmail = AuthenticationManager.validateEmail(body.email or '')
+		invalidPassword = AuthenticationManager.validatePassword(body.password or '')
+		if invalidEmail? or invalidPassword?
 			return false
 		else
 			return true
@@ -54,7 +46,8 @@ module.exports = UserRegistrationHandler =
 					(cb)-> User.update {_id: user._id}, {"$set":{holdingAccount:false}}, cb
 					(cb)-> AuthenticationManager.setUserPassword user._id, userDetails.password, cb
 					(cb)->
-						NewsLetterManager.subscribe user, ->
+						if userDetails.subscribeToNewsletter == "true"
+							NewsLetterManager.subscribe user, ->
 						cb() #this can be slow, just fire it off
 				], (err)->
 					logger.log user: user, "registered"

@@ -14,7 +14,7 @@ block content
 		.container(ng-controller="NewSubscriptionController" ng-cloak)
 			.row.card-group
 				.col-md-5.col-md-push-4
-					.card.card-highlighted
+					.card.card-highlighted.card-border
 						.page-header
 							.row
 								.col-xs-9
@@ -26,25 +26,17 @@ block content
 											data-toggle="dropdown",
 											dropdown-toggle
 										)
-											| {{currencyCode}} ({{plans[currencyCode]['symbol']}}) 
+											| {{currencyCode}} ({{allCurrencies[currencyCode]['symbol']}}) 
 											span.caret
 										ul.dropdown-menu(role="menu")
-											li(ng-repeat="(currency, value) in plans")
+											li(ng-repeat="(currency, value) in availableCurrencies")
 												a(
 													ng-click="changeCurrency(currency)",
 												) {{currency}} ({{value['symbol']}}) 
-							.row(ng-if="plansVariant == 'more-details' && planCode == 'student-annual' || plansVariant == 'more-details' && planCode == 'student-monthly'")
+							.row(ng-if="planCode == 'student-annual' || planCode == 'student-monthly'")
 								.col-xs-12
 									p.student-disclaimer #{translate('student_disclaimer')}
 
-							if plan_code == 'collaborator_free_trial_7_days' && !!settings.overleaf
-								.row
-									.col-xs-12
-										p.small.row-spaced-small
-											| The <strong>Collaborator</strong> plan is a new Overleaf v2 plan which includes track-changes, references search, and Dropbox &amp; GitHub integration. While Overleaf v2 is in beta, you can also still subscribe to a
-											|
-											a(href=settings.overleaf.host + "/plans") legacy plan in Overleaf v1
-											| .
 							hr.thin
 							.row
 								.col-md-12.text-center
@@ -52,11 +44,11 @@ block content
 										span !{translate("first_few_days_free", {trialLen:'{{trialLength}}'})}
 										span(ng-if="discountMonths && discountRate") &nbsp; -  {{discountMonths}} #{translate("month")}s {{discountRate}}% Off
 									div(ng-if="price")
-										strong {{plans[currencyCode]['symbol']}}{{price.next.total}} 
+										strong {{availableCurrencies[currencyCode]['symbol']}}{{price.next.total}} 
 										span(ng-if="monthlyBilling")  #{translate("every")} #{translate("month")}
 										span(ng-if="!monthlyBilling")  #{translate("every")} #{translate("year")}
 									div(ng-if="normalPrice")
-										span.small Normally {{plans[currencyCode]['symbol']}}{{normalPrice}}
+										span.small Normally {{availableCurrencies[currencyCode]['symbol']}}{{normalPrice}}
 						.row
 							div()
 								.col-md-12()
@@ -72,17 +64,19 @@ block content
 												ng-click="setPaymentMethod('credit_card');"
 												ng-class="paymentMethod.value === 'credit_card' ? 'payment-method-toggle-switch-selected' : ''"
 											)
-												i.fa.fa-cc-mastercard.fa-2x
+												i.fa.fa-cc-mastercard.fa-2x(aria-hidden)
 												span &nbsp;
-												i.fa.fa-cc-visa.fa-2x
+												i.fa.fa-cc-visa.fa-2x(aria-hidden)
 												span &nbsp;
-												i.fa.fa-cc-amex.fa-2x
+												i.fa.fa-cc-amex.fa-2x(aria-hidden)
+												span.sr-only Pay with Mastercard, Visa, or Amex
 											a.payment-method-toggle-switch(
 												href
 												ng-click="setPaymentMethod('paypal');"
 												ng-class="paymentMethod.value === 'paypal' ? 'payment-method-toggle-switch-selected' : ''"
 											)
-												i.fa.fa-cc-paypal.fa-2x
+												i.fa.fa-cc-paypal.fa-2x(aria-hidden)
+												span.sr-only Pay with PayPal
 										
 										.alert.alert-warning.small(ng-show="genericError")
 											strong {{genericError}}
@@ -196,8 +190,8 @@ block content
 											div.price-breakdown(ng-if="price.next.tax !== '0.00'")
 												hr.thin
 												span Total: 
-												strong {{plans[currencyCode]['symbol']}}{{price.next.total}} 
-												span ({{plans[currencyCode]['symbol']}}{{price.next.subtotal}} + {{plans[currencyCode]['symbol']}}{{price.next.tax}} tax) 
+												strong {{availableCurrencies[currencyCode]['symbol']}}{{price.next.total}} 
+												span ({{availableCurrencies[currencyCode]['symbol']}}{{price.next.subtotal}} + {{availableCurrencies[currencyCode]['symbol']}}{{price.next.tax}} tax) 
 												span(ng-if="monthlyBilling") #{translate("every")} #{translate("month")}
 												span(ng-if="!monthlyBilling") #{translate("every")} #{translate("year")}
 												hr.thin
@@ -208,7 +202,8 @@ block content
 													ng-disabled="processing  || !isFormValid(simpleCCForm);" 
 												) 
 													span(ng-show="processing") 
-														i.fa.fa-spinner.fa-spin
+														i.fa.fa-spinner.fa-spin(aria-hidden)
+														span.sr-only #{translate('processing')}
 														| &nbsp;
 													span(ng-if="paymentMethod.value === 'credit_card'")
 														| {{ monthlyBilling ? '#{translate("upgrade_cc_btn")}' : '#{translate("upgrade_now")}'}}
@@ -250,12 +245,6 @@ block content
 							hr
 								
 							p.small.text-center We're confident that you'll love #{settings.appName}, but if not you can cancel anytime. We'll give you your money back, no questions asked, if you let us know within 30 days.
-							hr
-							span &nbsp;  &nbsp;  &nbsp;  &nbsp;  &nbsp;  &nbsp;  &nbsp;  &nbsp;  &nbsp;
-							a(href="https://www.positivessl.com" style="font-family: arial; font-size: 10px; color: #212121; text-decoration: none;")
-								img(src="https://www.positivessl.com/images-new/PositiveSSL_tl_trans.png" alt="SSL Certificate" title="SSL Certificate" border="0")
-								div(style="font-family: arial;font-weight:bold;font-size:15px;color:#86BEE0;")
-									a(href="https://www.positivessl.com" style="color:#86BEE0; text-decoration: none;")
 
 
 	script(type="text/javascript").

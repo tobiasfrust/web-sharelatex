@@ -1,21 +1,3 @@
-if hasFeature('v2-banner')
-	.userNotifications
-		ul.list-unstyled.notifications-list(ng-controller="OverleafV2NotificationController", ng-show="visible")
-			li.notification_entry
-				.row
-					.col-xs-12
-						.alert.alert-info
-							.notification_inner
-								.notification_body(event-tracking="sees_v2_banner" event-tracking-mb="true" event-segmentation="{location: 'welcome', v2_onboard: true}" event-tracking-trigger="load" event-tracking-send-once="true")
-									a.btn.btn-info.btn-sm.pull-right(event-tracking="go_to_v2" event-tracking-mb="true" event-segmentation="{location: 'welcome', v2_onboard: true}" event-tracking-trigger="click" href="/user/login_to_ol_v2") Try Overleaf v2
-									| ShareLaTeX is joining Overleaf and will become <em>Overleaf v2</em> in late 2018 (<a event-tracking="click_v2_read_more" event-tracking-mb="true" event-segmentation="{location: 'welcome', v2_onboard: true}" event-tracking-trigger="click" href="https://www.overleaf.com/help/342-overleaf-v2-faq">read more</a>).
-									<br/>
-									| We’re beta testing Overleaf v2 now and you can try it out with your ShareLaTeX account.
-								.notification_close
-									button(ng-click="dismiss()" event-tracking="closes_v2_banner" event-tracking-mb="true" event-segmentation="{location: 'welcome', v2_onboard: true}"  event-tracking-trigger="click").close.pull-right
-										span(aria-hidden="true") &times;
-										span.sr-only #{translate("close")}
-
 span(ng-controller="NotificationsController").userNotifications
 	ul.list-unstyled.notifications-list(
 		ng-if="notifications.length > 0",
@@ -34,7 +16,7 @@ span(ng-controller="NotificationsController").userNotifications
 									a.pull-right.btn.btn-sm.btn-info(href, ng-click="accept()", ng-disabled="notification.inflight")
 										span(ng-show="!notification.inflight") #{translate("join_project")}
 										span(ng-show="notification.inflight")
-											i.fa.fa-fw.fa-spinner.fa-spin
+											i.fa.fa-fw.fa-spinner.fa-spin(aria-hidden)
 											| &nbsp;
 											| #{translate("joining")}...
 								.notification_body(ng-show="notification.accepted")
@@ -54,6 +36,21 @@ span(ng-controller="NotificationsController").userNotifications
 									button(ng-click="dismiss(notification)").close.pull-right
 										span(aria-hidden="true") &times;
 										span.sr-only #{translate("close")}
+						.alert.alert-info(ng-switch-when="notification_ip_matched_affiliation")
+							div.notification_inner
+								.notification_body
+									| It looks like you're at 
+									strong {{ notification.messageOpts.university_name }}! <br/>
+									|	Did you know that {{notification.messageOpts.university_name}} is providing
+									strong  free Overleaf Professional accounts 
+									|	 to everyone at {{notification.messageOpts.university_name}}? <br/>
+									|	Add an institutional email address to claim your account.
+									a.pull-right.btn.btn-sm.btn-info(href="/user/settings")
+										| Add Affiliation
+								span().notification_close
+									button(ng-click="dismiss(notification)").close.pull-right
+										span(aria-hidden="true") &times;
+										span.sr-only #{translate("close")}
 						.alert.alert-info(ng-switch-default)
 							div.notification_inner
 								span(ng-bind-html="notification.html").notification_body
@@ -61,3 +58,30 @@ span(ng-controller="NotificationsController").userNotifications
 									button(ng-click="dismiss(notification)").close.pull-right
 										span(aria-hidden="true") &times;
 										span.sr-only #{translate("close")}
+
+	ul.list-unstyled.notifications-list(
+		ng-controller="EmailNotificationController",
+		ng-cloak
+	)
+		li.notification_entry(
+			ng-repeat="userEmail in userEmails",
+			ng-if="!userEmail.confirmedAt && !userEmail.hide"
+		)
+			.row
+				.col-xs-12
+					.alert.alert-warning
+						.notification_inner(
+							ng-if="!userEmail.confirmationInflight"
+						)
+							| #{translate("please_confirm_email", {emailAddress: "{{ userEmail.email }}"})}
+							|
+							a(
+								href
+								ng-click="resendConfirmationEmail(userEmail)"
+							) (#{translate('resend_confirmation_email')})
+						.notification_inner(
+							ng-if="userEmail.confirmationInflight"
+						)
+							i.fa.fa-spinner.fa-spin(aria-hidden)
+							|
+							| #{translate('resending_confirmation_email')}&hellip;

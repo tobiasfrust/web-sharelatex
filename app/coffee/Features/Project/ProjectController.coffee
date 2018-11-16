@@ -26,8 +26,12 @@ TokenAccessHandler = require '../TokenAccess/TokenAccessHandler'
 CollaboratorsHandler = require '../Collaborators/CollaboratorsHandler'
 Modules = require '../../infrastructure/Modules'
 ProjectEntityHandler = require './ProjectEntityHandler'
+UserGetter = require("../User/UserGetter")
+NotificationsBuilder = require("../Notifications/NotificationsBuilder")
 crypto = require 'crypto'
 { V1ConnectionError } = require '../Errors/Errors'
+Features = require('../../infrastructure/Features')
+BrandVariationsHandler = require("../BrandVariations/BrandVariationsHandler")
 
 module.exports = ProjectController =
 
@@ -47,6 +51,10 @@ module.exports = ProjectController =
 		if req.body.compiler?
 			jobs.push (callback) ->
 				editorController.setCompiler project_id, req.body.compiler, callback
+
+		if req.body.imageName?
+			jobs.push (callback) ->
+				editorController.setImageName project_id, req.body.imageName, callback
 
 		if req.body.name?
 			jobs.push (callback) ->
@@ -184,10 +192,10 @@ module.exports = ProjectController =
 						return cb(null, projects: [], tags: [], noConnection: true)
 					return cb(error, projects[0]) # hooks.fire returns an array of results, only need first
 			hasSubscription: (cb)->
-				LimitationsManager.userHasSubscriptionOrIsGroupMember currentUser, (error, hasSub) ->
+				LimitationsManager.hasPaidSubscription currentUser, (error, hasPaidSubscription) ->
 					if error? and error instanceof V1ConnectionError
 						return cb(null, true)
-					return cb(error, hasSub)
+					return cb(error, hasPaidSubscription)
 			user: (cb) ->
 				User.findById user_id, "featureSwitches overleaf awareOfV2 features", cb
 			}, (err, results)->
@@ -204,6 +212,11 @@ module.exports = ProjectController =
 				user = results.user
 				warnings = ProjectController._buildWarningsList results.v1Projects
 
+				# in v2 add notifications for matching university IPs
+				if Settings.overleaf?
+					UserGetter.getUser user_id, { 'lastLoginIp': 1 }, (error, user) ->
+						if req.ip != user.lastLoginIp
+							NotificationsBuilder.ipMatcherAffiliation(user._id, req.ip).create()
 
 				ProjectController._injectProjectOwners projects, (error, projects) ->
 					return next(error) if error?
@@ -253,11 +266,11 @@ module.exports = ProjectController =
 		project_id = req.params.Project_id
 		logger.log project_id:project_id, anonymous:anonymous, user_id:user_id, "loading editor"
 
-		async.parallel {
+		async.auto {
 			project: (cb)->
 				ProjectGetter.getProject(
 					project_id,
-					{ name: 1, lastUpdated: 1, track_changes: 1, owner_ref: 1, 'overleaf.history.display': 1 },
+					{ name: 1, lastUpdated: 1, track_changes: 1, owner_ref: 1, brandVariationId: 1, 'overleaf.history.display': 1 },
 					cb
 				)
 			user: (cb)->
@@ -282,6 +295,12 @@ module.exports = ProjectController =
 				if !user_id?
 					return cb()
 				CollaboratorsHandler.userIsTokenMember user_id, project_id, cb
+			brandVariation: [ "project", (cb, results) ->
+				if !results.project?.brandVariationId?
+					return cb()
+				BrandVariationsHandler.getBrandVariationById results.project.brandVariationId, (error, brandVariationDetails) ->
+					cb(error, brandVariationDetails)
+			]
 		}, (err, results)->
 			if err?
 				logger.err err:err, "error getting details for project page"
@@ -289,7 +308,8 @@ module.exports = ProjectController =
 			project = results.project
 			user = results.user
 			subscription = results.subscription
-
+			brandVariation = results.brandVariation
+			
 			daysSinceLastUpdated =  (new Date() - project.lastUpdated) / 86400000
 			logger.log project_id:project_id, daysSinceLastUpdated:daysSinceLastUpdated, "got db results for loading editor"
 
@@ -325,7 +345,7 @@ module.exports = ProjectController =
 					}
 					userSettings: {
 						mode  : user.ace.mode
-						theme : user.ace.theme
+						editorTheme : user.ace.theme
 						fontSize : user.ace.fontSize
 						autoComplete: user.ace.autoComplete
 						autoPairDelimiters: user.ace.autoPairDelimiters
@@ -333,6 +353,7 @@ module.exports = ProjectController =
 						syntaxValidation: user.ace.syntaxValidation
 						fontFamily: user.ace.fontFamily
 						lineHeight: user.ace.lineHeight
+						overallTheme: user.ace.overallTheme
 					}
 					trackChangesState: project.track_changes
 					privilegeLevel: privilegeLevel
@@ -341,12 +362,15 @@ module.exports = ProjectController =
 					anonymousAccessToken: req._anonymousAccessToken
 					isTokenMember: isTokenMember
 					languages: Settings.languages
-					themes: THEME_LIST
+					editorThemes: THEME_LIST
 					maxDocLength: Settings.max_doc_length
 					useV2History: !!project.overleaf?.history?.display
-					showRichText: req.query?.rt == 'true'
+					richTextEnabled: Features.hasFeature('rich-text')
 					showTestControls: req.query?.tc == 'true' || user.isAdmin
-					showPublishModal: req.query?.pm == 'true'
+					brandVariation: brandVariation
+					allowedImageNames: Settings.allowedImageNames || []
+					gitBridgePublicBaseUrl: Settings.gitBridgePublicBaseUrl
+					showGitBridge: req.query?.gitbridge == 'true' || user.isAdmin
 				timer.done()
 
 	_buildProjectList: (allProjects, v1Projects = [])->
@@ -461,6 +485,6 @@ THEME_LIST = []
 do generateThemeList = () ->
 	files = fs.readdirSync __dirname + '/../../../../public/js/' + PackageVersions.lib('ace')
 	for file in files
-		if file.slice(-2) == "js" and file.match(/^theme-/)
+		if file.slice(-2) == "js" and /^theme-/.test(file)
 			cleanName = file.slice(0,-3).slice(6)
 			THEME_LIST.push cleanName

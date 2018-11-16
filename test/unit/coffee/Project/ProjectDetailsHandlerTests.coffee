@@ -140,8 +140,13 @@ describe 'ProjectDetailsHandler', ->
 				expect(error).to.exist
 				done()
 
-		it "should reject empty names with /s", (done) ->
+		it "should reject names with /s", (done) ->
 			@handler.validateProjectName "foo/bar", (error) ->
+				expect(error).to.exist
+				done()
+
+		it "should reject names with \\s", (done) ->
+			@handler.validateProjectName "foo\\bar", (error) ->
 				expect(error).to.exist
 				done()
 
@@ -154,6 +159,65 @@ describe 'ProjectDetailsHandler', ->
 			@handler.validateProjectName "foobar", (error) ->
 				expect(error).to.not.exist
 				done()
+
+	describe "ensureProjectNameIsUnique", ->
+		beforeEach ->
+			@result = {
+				owned: [{_id: 1, name:"name"}, {_id: 2, name: "name1"}, {_id: 3, name: "name11"}]
+				readAndWrite: [{_id: 4, name:"name2"}, {_id: 5, name:"name22"}]
+				readOnly: [{_id:6, name:"name3"}, {_id:7, name: "name33"}]
+				tokenReadAndWrite: [{_id:8, name:"name4"}, {_id:9, name:"name44"}]
+				tokenReadOnly: [{_id:10, name:"name5"}, {_id:11, name:"name55"}, {_id:12, name:"x".repeat(15)}]
+			}
+			@ProjectGetter.findAllUsersProjects = sinon.stub().callsArgWith(2, null, @result)
+
+		it "should leave a unique name unchanged", (done) ->
+			@handler.ensureProjectNameIsUnique @user_id, "unique-name", ["-test-suffix"], (error, name, changed) ->
+				expect(name).to.equal "unique-name"
+				expect(changed).to.equal false
+				done()
+
+		it "should append a suffix to an existing name", (done) ->
+			@handler.ensureProjectNameIsUnique @user_id, "name1", ["-test-suffix"], (error, name, changed) ->
+				expect(name).to.equal "name1-test-suffix"
+				expect(changed).to.equal true
+				done()
+
+		it "should fallback to a second suffix when needed", (done) ->
+			@handler.ensureProjectNameIsUnique @user_id, "name1", ["1", "-test-suffix"], (error, name, changed) ->
+				expect(name).to.equal "name1-test-suffix"
+				expect(changed).to.equal true
+				done()
+
+		it "should truncate the name when append a suffix if the result is too long", (done) ->
+			@handler.MAX_PROJECT_NAME_LENGTH = 20
+			@handler.ensureProjectNameIsUnique @user_id, "x".repeat(15), ["-test-suffix"], (error, name, changed) ->
+				expect(name).to.equal "x".repeat(8) + "-test-suffix"
+				expect(changed).to.equal true
+				done()
+
+		it "should return an error if the name cannot be made unique", (done) ->
+			@handler.ensureProjectNameIsUnique @user_id, "name", ["1", "5", "55"], (error, name, changed) ->
+				expect(error).to.eql new Errors.InvalidNameError("Project name could not be made unique")
+				done()
+
+	describe "fixProjectName", ->
+
+		it "should change empty names to Untitled", () ->
+			expect(@handler.fixProjectName "").to.equal "Untitled"
+
+		it "should replace / with -", () ->
+			expect(@handler.fixProjectName "foo/bar").to.equal "foo-bar"
+
+		it "should replace \\ with ''", () ->
+			expect(@handler.fixProjectName "foo \\ bar").to.equal "foo  bar"
+
+		it "should truncate long names", () ->
+			expect(@handler.fixProjectName new Array(1000).join("a")).to.equal "a".repeat(150)
+
+		it "should accept normal names", () ->
+			expect(@handler.fixProjectName "foobar").to.equal "foobar"
+
 
 	describe "setPublicAccessLevel", ->
 		beforeEach ->

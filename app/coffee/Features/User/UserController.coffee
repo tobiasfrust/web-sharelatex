@@ -13,6 +13,7 @@ UserSessionsManager = require("./UserSessionsManager")
 UserUpdater = require("./UserUpdater")
 SudoModeHandler = require('../SudoMode/SudoModeHandler')
 settings = require "settings-sharelatex"
+Errors = require "../Errors/Errors"
 
 module.exports = UserController =
 
@@ -67,8 +68,10 @@ module.exports = UserController =
 				user.institution = req.body.institution.trim()
 			if req.body.mode?
 				user.ace.mode = req.body.mode
-			if req.body.theme?
-				user.ace.theme = req.body.theme
+			if req.body.editorTheme?
+				user.ace.theme = req.body.editorTheme
+			if req.body.overallTheme?
+				user.ace.overallTheme = req.body.overallTheme
 			if req.body.fontSize?
 				user.ace.fontSize = req.body.fontSize
 			if req.body.autoComplete?
@@ -100,7 +103,7 @@ module.exports = UserController =
 					UserUpdater.changeEmailAddress user_id, newEmail, (err)->
 						if err?
 							logger.err err:err, user_id:user_id, newEmail:newEmail, "problem updaing users email address"
-							if err.message == "alread_exists"
+							if err instanceof Errors.EmailExistsError
 								message = req.i18n.translate("email_already_registered")
 							else
 								message = req.i18n.translate("problem_changing_email_address")
@@ -115,7 +118,7 @@ module.exports = UserController =
 									logger.err err:err, "error populateTeamInvites"
 								res.sendStatus(200)
 
-	logout : (req, res)->
+	_doLogout: (req, cb = (err) ->) ->
 		metrics.inc "user.logout"
 		user = AuthenticationController.getSessionUser(req)
 		logger.log user: user, "logging out"
@@ -124,9 +127,15 @@ module.exports = UserController =
 		req.session.destroy (err)->
 			if err
 				logger.err err: err, 'error destorying session'
+				cb(err)
 			if user?
 				UserSessionsManager.untrackSession(user, sessionId)
 				SudoModeHandler.clearSudoMode(user._id)
+			cb()
+
+	logout : (req, res, next)->
+		UserController._doLogout req, (err) ->
+			return next(err) if err?
 			res.redirect '/login'
 
 	register : (req, res, next = (error) ->)->

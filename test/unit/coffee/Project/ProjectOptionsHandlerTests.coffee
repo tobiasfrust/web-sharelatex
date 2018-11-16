@@ -4,7 +4,7 @@ should = chai.should()
 modulePath = "../../../../app/js/Features/Project/ProjectOptionsHandler.js"
 SandboxedModule = require('sandboxed-module')
 
-describe 'creating a project', ->
+describe 'ProjectOptionsHandler', ->
 	project_id = "4eecaffcbffa66588e000008"
 
 	beforeEach ->
@@ -18,6 +18,11 @@ describe 'creating a project', ->
 				languages:[
 					{name: "English", code: "en"}
 					{name: "French", code: "fr"}
+				]
+				imageRoot: "docker-repo/subdir"
+				allowedImageNames: [
+					{imageName: "texlive-0000.0", imageDesc: "test image 0"}
+					{imageName: "texlive-1234.5", imageDesc: "test image 1"}
 				]
 			'logger-sharelatex':
 				log:->
@@ -37,6 +42,19 @@ describe 'creating a project', ->
 				@projectModel.update.called.should.equal false
 				done()
 
+	describe 'Setting the imageName', ->
+		it 'should perform and update on mongo', (done)->
+			@handler.setImageName project_id, "texlive-1234.5", (err)=>
+				args = @projectModel.update.args[0]
+				args[0]._id.should.equal project_id
+				args[1].imageName.should.equal "docker-repo/subdir/texlive-1234.5"
+				done()
+			@projectModel.update.args[0][3]()
+
+		it 'should not perform and update on mongo if it is not a reconised compiler', (done)->
+			@handler.setImageName project_id, "something", (err)=>
+				@projectModel.update.called.should.equal false
+				done()
 
 	describe "setting the spellCheckLanguage", ->
 
@@ -59,3 +77,23 @@ describe 'creating a project', ->
 				@projectModel.update.called.should.equal true
 				done()
 			@projectModel.update.args[0][3]()
+
+	describe "setting the brandVariationId", ->
+		it 'should perform and update on mongo', (done)->
+			@handler.setBrandVariationId project_id, "123", (err)=>
+				args = @projectModel.update.args[0]
+				args[0]._id.should.equal project_id
+				args[1].brandVariationId.should.equal "123"
+				done()
+			@projectModel.update.args[0][3]()
+
+
+		it 'should not perform and update on mongo if there is no brand variation', (done)->
+			@handler.setBrandVariationId project_id, null, (err)=>
+				@projectModel.update.called.should.equal false
+				done()
+
+		it 'should not perform and update on mongo if brand variation is an empty string', (done)->
+			@handler.setBrandVariationId project_id, "", (err)=>
+				@projectModel.update.called.should.equal false
+				done()

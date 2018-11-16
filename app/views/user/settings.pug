@@ -9,7 +9,7 @@ block content
 						.page-header
 							h1  #{translate("account_settings")}
 						.account-settings(ng-controller="AccountSettingsController", ng-cloak)
-							if locals.showAffiliationsUI && hasFeature('affiliations')
+							if hasFeature('affiliations')
 								include settings/user-affiliations
 								
 							form-messages(for="settingsForm")
@@ -22,7 +22,7 @@ block content
 									h3 #{translate("update_account_info")}
 									form(async-form="settings", name="settingsForm", method="POST", action="/user/settings", novalidate)
 										input(type="hidden", name="_csrf", value=csrfToken)
-										if !(locals.showAffiliationsUI && hasFeature('affiliations'))
+										if !hasFeature('affiliations')
 											if !externalAuthenticationSystemUsed() 
 												.form-group
 													label(for='email')  #{translate("email")}
@@ -33,7 +33,7 @@ block content
 														required,
 														ng-model="email",
 														ng-init="email = "+JSON.stringify(user.email),
-														ng-model-options="{ updateOn: 'blur' }"
+														ng-model-options="{ pdateOn: 'blur' }"
 													)
 													span.small.text-primary(ng-show="settingsForm.email.$invalid && settingsForm.email.$dirty")
 														|  #{translate("must_be_email_address")}
@@ -73,10 +73,24 @@ block content
 												label.control-label #{translate("last_name")}
 												div.form-control(readonly="true") #{user.last_name}
 
-								if !externalAuthenticationSystemUsed()
-									.col-md-5.col-md-offset-1
-										h3 #{translate("change_password")}
-										form(async-form="changepassword", name="changePasswordForm", action="/user/password/update", method="POST", novalidate)
+								.col-md-5.col-md-offset-1
+									h3 #{translate("change_password")}
+									if externalAuthenticationSystemUsed() && !settings.overleaf
+										p
+											Password settings are managed externally
+									else
+										- var submitAction
+										if settings.overleaf
+											- submitAction = '/user/change_password/v1'
+										else
+											- submitAction = '/user/password/update'
+										form(
+											async-form="changepassword"
+											name="changePasswordForm"
+											action=submitAction
+											method="POST"
+											novalidate
+										)
 											input(type="hidden", name="_csrf", value=csrfToken)
 											.form-group
 												label(for='currentPassword') #{translate("current_password")}
@@ -120,8 +134,6 @@ block content
 													ng-disabled="changePasswordForm.$invalid"
 												) #{translate("change")}
 
-						
-
 							| !{moduleIncludes("userSettings", locals)}
 
 							//- The beta program doesn't make much sense to include while v2 is going
@@ -148,7 +160,7 @@ block content
 
 							hr
 
-							if !externalAuthenticationSystemUsed()
+							if !externalAuthenticationSystemUsed() || (settings.createV1AccountOnLogin && settings.overleaf)
 
 								p.small
 									| #{translate("newsletter_info_and_unsubscribe")} 
@@ -160,14 +172,19 @@ block content
 									span(
 										ng-show="unsubscribing"
 									)
-										i.fa.fa-spin.fa-refresh
+										i.fa.fa-spin.fa-refresh(aria-hidden)
 										| #{translate("unsubscribing")}
 									span.text-success(
 										ng-show="!subscribed"
 									)
-										i.fa.fa-check
+										i.fa.fa-check(aria-hidden)
 										| #{translate("unsubscribed")}
-				
+
+									if !settings.overleaf && user.overleaf
+										p
+											| Please note: If you have linked your account with Overleaf
+											| v2, then deleting your ShareLaTeX account will also delete
+											| account and all of it's associated projects and data.
 									p #{translate("need_to_leave")} 
 										a(href, ng-click="deleteAccount()")  #{translate("delete_your_account")}
 
@@ -177,6 +194,13 @@ block content
 			h3 #{translate("delete_account")}
 		div.modal-body#delete-account-modal
 			p !{translate("delete_account_warning_message_3")}
+			if settings.createV1AccountOnLogin && settings.overleaf
+				p
+					strong
+						| This will also delete your user account on #[a(href='/sign_in_to_v1?return_to=/dash%3Fprefer-v1-dash%3D1' target="_blank") Overleaf v1].
+						| If you want to remove your projects from Overleaf v1, you must do this before you
+						| delete your account by going to your My Projects page in Overleaf v1, moving your
+						| projects to the Trash, and then from there either ‘leaving’ or ‘purging’ them, as appropriate.
 			form(novalidate, name="deleteAccountForm")
 				label #{translate('email')}
 				input.form-control(
@@ -187,6 +211,7 @@ block content
 					focus-on="open",
 					ng-keyup="checkValidation()"
 				)
+
 				label #{translate('password')}
 				input.form-control(
 					type="password",
@@ -195,12 +220,36 @@ block content
 					ng-model="state.password",
 					ng-keyup="checkValidation()"
 				)
+
+				div.confirmation-checkbox-wrapper
+					input(
+						type="checkbox"
+						ng-model="state.confirmV1Purge"
+						ng-change="checkValidation()"
+					).pull-left
+					label(style="display: inline") &nbsp;I have left or purged my projects on Overleaf v1 (if any) &nbsp;
+
+				div.confirmation-checkbox-wrapper
+					input(
+						type="checkbox"
+						ng-model="state.confirmSharelatexDelete"
+						ng-change="checkValidation()"
+					).pull-left
+					label(style="display: inline") &nbsp;I understand this will delete all projects in my Overleaf v2 account (and ShareLaTeX account, if any) with email address #[em {{ userDefaultEmail }}]
+
 			div(ng-if="state.error")
 				div.alert.alert-danger
 					| #{translate('generic_something_went_wrong')}
 			div(ng-if="state.invalidCredentials")
 				div.alert.alert-danger
 					| #{translate('email_or_password_wrong_try_again')}
+			if settings.createV1AccountOnLogin && settings.overleaf
+				div(ng-if="state.error || state.invalidCredentials")
+					div.alert.alert-info
+						| If you can't remember your password, or if you are using Single-Sign-On with another provider
+						| to sign in (such as Twitter or Google), please
+						| #[a(href='/sign_in_to_v1?return_to=/users/password/new', target='_blank') reset your password],
+						| and try again.
 		.modal-footer
 			button.btn.btn-default(
 				ng-click="cancel()"

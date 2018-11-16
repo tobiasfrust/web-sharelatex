@@ -13,6 +13,7 @@ SubscriptionSchema = new Schema
 	teamInvites  :   [ TeamInviteSchema ]
 	recurlySubscription_id : String
 	teamName 	 : {type: String}
+	teamNotice : {type: String}
 	planCode 	 : {type: String}
 	groupPlan	 : {type: Boolean, default: false}
 	membersLimit: {type:Number, default:0}
@@ -34,6 +35,10 @@ SubscriptionSchema.statics.findAndModify = (query, update, callback)->
 	self = @
 	this.update query, update, ->
 		self.findOne query, callback
+
+# Subscriptions have no v1 data to fetch
+SubscriptionSchema.method 'fetchV1Data', (callback = (error, subscription)->) ->
+	callback(null, this)
 
 conn = mongoose.createConnection(Settings.mongo.url, {
 	server: {poolSize: Settings.mongo.poolSize || 10},

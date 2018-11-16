@@ -4,12 +4,19 @@ v1Api =
 module.exports =
 	enableSubscriptions: true
 
+	# for registration via SL, set enableLegacyRegistration to true
+	# for registration via Overleaf v1, set enableLegacyLogin to true
+
+	# Currently, acceptance tests require enableLegacyRegistration.
+	enableLegacyRegistration: true
+
 	features: features =
 		v1_free:
 			collaborators: 1
 			dropbox: false
 			versioning: false
 			github: true
+			gitBridge: true
 			templates: false
 			references: false
 			referencesSearch: false
@@ -22,6 +29,7 @@ module.exports =
 			dropbox: false
 			versioning: false
 			github: false
+			gitBridge: false
 			templates: false
 			references: false
 			referencesSearch: false
@@ -34,6 +42,7 @@ module.exports =
 			dropbox: true
 			versioning: true
 			github: true
+			gitBridge: true
 			templates: true
 			references: true
 			referencesSearch: true
@@ -46,6 +55,7 @@ module.exports =
 			dropbox: true
 			versioning: true
 			github: true
+			gitBridge: true
 			templates: true
 			references: true
 			referencesSearch: true
@@ -105,3 +115,29 @@ module.exports =
 			path: (params) -> "/universities/list/#{params.id}"
 		'/institutions/domains': { baseUrl: v1Api.url, path: '/university/domains' }
 		'/proxy/missing/baseUrl': path: '/foo/bar'
+		'/proxy/get_and_post': {
+			methods: ['get', 'post'],
+			path: '/destination/get_and_post'
+		}
+
+	overleaf:
+		host: "http://overleaf.test:5000"
+
+	redirects:
+		'/redirect/one': '/destination/one',
+		'/redirect/get_and_post': {
+			methods: ['get', 'post'],
+			url: '/destination/get_and_post'
+		},
+		'/redirect/base_url': {
+			baseUrl: 'https://example.com'
+			url: '/destination/base_url'
+		},
+		'/redirect/params/:id': {
+			url: (params) -> "/destination/#{params.id}/params"
+		},
+		'/redirect/qs': '/destination/qs'
+		'/docs_v1': {
+			authWithV1: true
+			url: '/docs'
+		}

@@ -1,23 +1,28 @@
-UserGetter = require '../User/UserGetter'
+InstitutionsGetter = require './InstitutionsGetter'
 PlansLocator = require '../Subscription/PlansLocator'
 Settings = require 'settings-sharelatex'
 logger = require 'logger-sharelatex'
 
 module.exports = InstitutionsFeatures =
 	getInstitutionsFeatures: (userId, callback = (error, features) ->) ->
-		InstitutionsFeatures.hasLicence userId, (error, hasLicence) ->
+		InstitutionsFeatures.getInstitutionsPlan userId, (error, plan) ->
 			return callback error if error?
-			return callback(null, {}) unless hasLicence
-			plan = PlansLocator.findLocalPlanInSettings Settings.institutionPlanCode
+			plan = PlansLocator.findLocalPlanInSettings plan
 			callback(null, plan?.features or {})
 
 
+	getInstitutionsPlan: (userId, callback = (error, plan) ->) ->
+		InstitutionsFeatures.hasLicence userId, (error, hasLicence) ->
+			return callback error if error?
+			return callback(null, null) unless hasLicence
+			callback(null, Settings.institutionPlanCode)
+
+
 	hasLicence: (userId, callback = (error, hasLicence) ->) ->
-		UserGetter.getUserFullEmails userId, (error, emailsData) ->
+		InstitutionsGetter.getConfirmedInstitutions userId, (error, institutions) ->
 			return callback error if error?
 
-			affiliation = emailsData.find (emailData) ->
-				licence = emailData.affiliation?.institution?.licence
-				emailData.confirmedAt? and licence? and licence != 'free'
+			hasLicence = institutions.some (institution) ->
+				institution.licence and institution.licence != 'free'
 
-			callback(null, !!affiliation)
+			callback(null, hasLicence)

@@ -436,6 +436,7 @@
       font-weight: @navbar-btn-font-weight;
       line-height: @navbar-btn-line-height;
       padding: @navbar-btn-padding;
+      background-color: @navbar-default-link-bg;
 
       &:hover,
       &:focus {
@@ -466,19 +467,20 @@
       color: @navbar-subdued-color;
       padding: @navbar-subdued-padding;
       margin-left: 0;
-      &:hover {
+      background-color: transparent;
+      &:hover,
+      &:focus {
         color: @navbar-subdued-hover-color;
         background-color: @navbar-subdued-hover-bg;
       }
       &:focus {
-          color: @navbar-subdued-color;
-          background-color: transparent;
+        .tab-focus()
       }
     }
 
     @media (min-width: @grid-float-breakpoint) {
       > li > a {
-        border-color: @navbar-default-link-color;
+        border-color: @navbar-default-link-border-color;
         margin-left: 1rem;
       }
     }

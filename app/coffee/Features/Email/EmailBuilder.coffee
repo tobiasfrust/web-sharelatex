@@ -40,6 +40,21 @@ The #{settings.appName} Team - #{settings.siteUrl}
 
 templates = {}
 
+templates.accountMergeToOverleafAddress = CTAEmailTemplate({
+	subject: () -> "Confirm Account Merge - #{settings.appName}"
+	title: () -> "Confirm Account Merge"
+	message: () ->
+		"""
+			To merge your ShareLaTeX and Overleaf accounts, click the button below.
+			If you think you have received this message in error,
+			please contact us at https://www.overleaf.com/contact
+		"""
+	ctaText: () -> "Confirm Account Merge"
+	ctaURL: (opts) -> opts.tokenLinkUrl
+})
+
+templates.accountMergeToSharelatexAddress = templates.accountMergeToOverleafAddress
+
 templates.registered = CTAEmailTemplate({
 	subject: () -> "Activate your #{settings.appName} Account"
 	message: (opts) -> """
@@ -59,7 +74,7 @@ I'm sorry to see you cancelled your #{settings.appName} premium account. Would y
 """
 	secondaryMessage: () -> "Thank you in advance!"
 	ctaText: () -> "Leave Feedback"
-	ctaURL: (opts) -> "https://sharelatex.typeform.com/to/f5lBiZ"
+	ctaURL: (opts) -> "https://docs.google.com/forms/d/e/1FAIpQLScqU6Je1r4Afz6ul6oY0RAfN7RabdWv_oL1u7Rj1YBmXS4fiQ/viewform?usp=sf_link"
 })
 
 templates.passwordResetRequested = CTAEmailTemplate({

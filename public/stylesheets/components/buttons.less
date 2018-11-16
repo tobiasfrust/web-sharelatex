@@ -58,6 +58,9 @@
 .btn-default {
   .button-variant(@btn-default-color; @btn-default-bg; @btn-default-border);
 }
+.btn-default-outline {
+  .button-outline-variant(@btn-default-bg);
+}
 .btn-primary {
   .button-variant(@btn-primary-color; @btn-primary-bg; @btn-primary-border);
 }
@@ -121,6 +124,10 @@
 
 // Button Sizes
 // --------------------------------------------------
+
+.btn-xl {
+  .button-size(@padding-large-vertical; @padding-large-horizontal; @font-size-h2; @line-height-large; @btn-border-radius-large);
+}
 
 .btn-lg {
   // line-height: ensure even-numbered height of button next to large input

@@ -28,6 +28,10 @@ module.exports = MockV1Api =
 
 	affiliations: []
 
+	updateEmail: sinon.stub()
+
+	existingEmails: []
+
 	setAffiliations: (affiliations) -> @affiliations = affiliations
 
 	run: () ->
@@ -64,10 +68,34 @@ module.exports = MockV1Api =
 		app.get '/university/domains', (req, res, next) ->
 			res.json []
 
+		app.put '/api/v1/sharelatex/users/:id/email', (req, res, next) =>
+			{ email } = req.body?.user
+			if email in @existingEmails
+				return res.sendStatus 409
+			else
+				@updateEmail parseInt(req.params.id), email
+				return res.sendStatus 200
+
+		app.post "/api/v1/sharelatex/login", (req, res, next) =>
+			for id, user of @users
+				if user? && user.email == req.body.email && user.password == req.body.password
+					return res.json {
+						email: user.email,
+						valid: true,
+						user_profile: user.profile
+					}
+			return res.status(403).json {
+				email: req.body.email,
+				valid: false
+			}
+
 		app.listen 5000, (error) ->
 			throw error if error?
 		.on "error", (error) ->
 			console.error "error starting MockV1Api:", error.message
 			process.exit(1)
+		
+		app.get '/api/v1/sharelatex/docs/:token/info', (req, res, next) =>
+			res.json { allow: true, exported: false }
 
 MockV1Api.run()

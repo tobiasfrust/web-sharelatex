@@ -1,6 +1,5 @@
 AuthenticationManager = require ("./AuthenticationManager")
 LoginRateLimiter = require("../Security/LoginRateLimiter")
-UserGetter = require "../User/UserGetter"
 UserUpdater = require "../User/UserUpdater"
 Metrics = require('metrics-sharelatex')
 logger = require("logger-sharelatex")
@@ -12,6 +11,10 @@ UserHandler = require("../User/UserHandler")
 UserSessionsManager = require("../User/UserSessionsManager")
 Analytics = require "../Analytics/AnalyticsManager"
 passport = require 'passport'
+NotificationsBuilder = require("../Notifications/NotificationsBuilder")
+SudoModeHandler = require '../SudoMode/SudoModeHandler'
+V1Api = require "../V1/V1Api"
+{User} = require "../../models/User"
 
 module.exports = AuthenticationController =
 
@@ -44,7 +47,7 @@ module.exports = AuthenticationController =
 					return callback(err)
 				req.sessionStore.generate(req)
 				for key, value of oldSession
-					req.session[key] = value
+					req.session[key] = value unless key == '__tmp'
 				# copy to the old `session.user` location, for backward-comptability
 				req.session.user = req.session.passport.user
 				req.session.save (err) ->
@@ -62,41 +65,74 @@ module.exports = AuthenticationController =
 			if err?
 				return next(err)
 			if user # `user` is either a user object or false
-				redir = AuthenticationController._getRedirectFromSession(req) || "/project"
-				AuthenticationController.afterLoginSessionSetup req, user, (err) ->
-					if err?
-						return next(err)
-					AuthenticationController._clearRedirectFromSession(req)
-					res.json {redir: redir}
+				AuthenticationController.finishLogin(user, req, res, next)
 			else
-				res.json message: info
+				if info.redir?
+					res.json {redir: info.redir}
+				else
+					res.json message: info
 		)(req, res, next)
+
+	finishLogin: (user, req, res, next) ->
+		redir = AuthenticationController._getRedirectFromSession(req) || "/project"
+		AuthenticationController._loginAsyncHandlers(req, user)
+		AuthenticationController.afterLoginSessionSetup req, user, (err) ->
+			if err?
+				return next(err)
+			SudoModeHandler.activateSudoMode user._id, (err) ->
+				if err?
+					logger.err {err, user_id: user._id}, "Error activating Sudo Mode on login, continuing"
+				AuthenticationController._clearRedirectFromSession(req)
+				if req.headers?['accept']?.match(/^application\/json.*$/)
+					res.json {redir: redir}
+				else
+					res.redirect(redir)
 
 	doPassportLogin: (req, username, password, done) ->
 		email = username.toLowerCase()
-		LoginRateLimiter.processLoginRequest email, (err, isAllowed)->
-			return done(err) if err?
-			if !isAllowed
-				logger.log email:email, "too many login requests"
-				return done(null, null, {text: req.i18n.translate("to_many_login_requests_2_mins"), type: 'error'})
-			AuthenticationManager.authenticate email: email, password, (error, user) ->
-				return done(error) if error?
-				if user?
-					# async actions
-					UserHandler.setupLoginData(user, ()->)
-					LoginRateLimiter.recordSuccessfulLogin(email)
-					AuthenticationController._recordSuccessfulLogin(user._id)
-					Analytics.recordEvent(user._id, "user-logged-in", {ip:req.ip})
-					Analytics.identifyUser(user._id, req.sessionID)
-					logger.log email: email, user_id: user._id.toString(), "successful log in"
-					req.session.justLoggedIn = true
-					# capture the request ip for use when creating the session
-					user._login_req_ip = req.ip
-					return done(null, user)
-				else
-					AuthenticationController._recordFailedLogin()
-					logger.log email: email, "failed log in"
-					return done(null, false, {text: req.i18n.translate("email_or_password_wrong_try_again"), type: 'error'})
+		Modules = require "../../infrastructure/Modules"
+		Modules.hooks.fire 'preDoPassportLogin', req, email, (err, infoList) ->
+			return next(err) if err?
+			info = infoList.find((i) => i?)
+			if info?
+				return done(null, false, info)
+			LoginRateLimiter.processLoginRequest email, (err, isAllowed)->
+				return done(err) if err?
+				if !isAllowed
+					logger.log email:email, "too many login requests"
+					return done(null, null, {text: req.i18n.translate("to_many_login_requests_2_mins"), type: 'error'})
+				AuthenticationManager.authenticate email: email, password, (error, user) ->
+					return done(error) if error?
+					if user?
+						# async actions
+						return done(null, user)
+					else
+						AuthenticationController._recordFailedLogin()
+						logger.log email: email, "failed log in"
+						return done(
+							null,
+							false,
+							{text: req.i18n.translate("email_or_password_wrong_try_again"), type: 'error'}
+						)
+
+	_loginAsyncHandlers: (req, user) ->
+		UserHandler.setupLoginData(user, ()->)
+		LoginRateLimiter.recordSuccessfulLogin(user.email)
+		AuthenticationController._recordSuccessfulLogin(user._id)
+		AuthenticationController.ipMatchCheck(req, user)
+		Analytics.recordEvent(user._id, "user-logged-in", {ip:req.ip})
+		Analytics.identifyUser(user._id, req.sessionID)
+		logger.log email: user.email, user_id: user._id.toString(), "successful log in"
+		req.session.justLoggedIn = true
+		# capture the request ip for use when creating the session
+		user._login_req_ip = req.ip
+
+	ipMatchCheck: (req, user) ->
+		if req.ip != user.lastLoginIp
+			NotificationsBuilder.ipMatcherAffiliation(user._id, req.ip).create()
+		UserUpdater.updateUser user._id.toString(), {
+			$set: { "lastLoginIp": req.ip }
+		}
 
 	setInSessionUser: (req, props) ->
 		for key, value of props
@@ -134,6 +170,24 @@ module.exports = AuthenticationController =
 				next()
 
 		return doRequest
+
+	requireOauth: () ->
+		return (req, res, next = (error) ->) ->
+			return res.status(401).send() unless req.token?
+			options =
+				expectedStatusCodes: [401]
+				json: token: req.token
+				method: "POST"
+				uri: "/api/v1/sharelatex/oauth_authorize"
+			V1Api.request options, (error, response, body) ->
+				return next(error) if error?
+				return res.status(401).json({error: "invalid_token"}) unless body?.user_profile?.id
+				User.findOne { "overleaf.id": body.user_profile.id }, (error, user) ->
+					return next(error) if error?
+					return res.status(401).send({error: "invalid_token"}) unless user?
+					req.oauth = access_token: body.access_token
+					req.oauth_user = user
+					next()
 
 	_globalLoginWhitelist: []
 	addEndpointToLoginWhitelist: (endpoint) ->
@@ -196,8 +250,8 @@ module.exports = AuthenticationController =
 			value = if Object.keys(req.query).length > 0 then "#{req.path}?#{querystring.stringify(req.query)}" else "#{req.path}"
 		if (
 			req.session? &&
-			!value.match(new RegExp('^\/(socket.io|js|stylesheets|img)\/.*$')) &&
-			!value.match(new RegExp('^.*\.(png|jpeg|svg)$'))
+			!/^\/(socket.io|js|stylesheets|img)\/.*$/.test(value) &&
+			!/^.*\.(png|jpeg|svg)$/.test(value)
 		)
 			req.session.postLoginRedirect = value
 

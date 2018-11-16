@@ -13,6 +13,11 @@
 			font-size: 18px;
 		}
 	}
+
+	img {
+		height: auto;
+		max-width: 100%;
+	}
 	
 	.page-header {
 		a {
@@ -36,6 +41,11 @@
 			font-family: @font-family-serif;
 		}
 		margin-bottom: @line-height-computed / 2;
+	}
+	.table-no-borders {
+		th, td {
+			border: 0px;
+		}
 	}
 	
 	.example {
@@ -66,6 +76,11 @@
 	@media (min-width: 1360px) {
 		.example {
 			margin-right: -200px;
+		}
+	}
+	@media (max-width: @screen-sm) {
+		.contents {
+			margin-top: @margin-lg;
 		}
 	}
 	

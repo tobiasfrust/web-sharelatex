@@ -9,6 +9,7 @@ MockResponse = require "../helpers/MockResponse"
 MockRequest = require "../helpers/MockRequest"
 ObjectId = require("mongojs").ObjectId
 assert = require("assert")
+Errors = require "../../../../app/js/Features/Errors/Errors"
 
 describe "UserController", ->
 	beforeEach ->
@@ -81,6 +82,7 @@ describe "UserController", ->
 				log:->
 				err:->
 			"metrics-sharelatex": inc:->
+			"../Errors/Errors": Errors
 
 		@res =
 			send: sinon.stub()
@@ -222,9 +224,17 @@ describe "UserController", ->
 
 		it "should set some props on ace", (done)->
 			@req.body =
-				theme: "something"
+				editorTheme: "something"
 			@res.sendStatus = (code)=>
 				@user.ace.theme.should.equal "something"
+				done()
+			@UserController.updateUserSettings @req, @res
+
+		it "should set the overall theme", (done)->
+			@req.body =
+				overallTheme: "green-ish"
+			@res.sendStatus = (code)=>
+				@user.ace.overallTheme.should.equal "green-ish"
 				done()
 			@UserController.updateUserSettings @req, @res
 

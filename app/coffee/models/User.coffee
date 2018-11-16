@@ -10,6 +10,7 @@ UserSchema = new Schema
 	email             : {type : String, default : ''}
 	emails: [{
 		email: { type : String, default : '' },
+		reversedHostname: { type : String, default : '' },
 		createdAt: { type : Date, default: () -> new Date() },
 		confirmedAt: { type: Date }
 	}],
@@ -19,14 +20,15 @@ UserSchema = new Schema
 	institution       : {type : String, default : ''}
 	hashedPassword    : String
 	isAdmin           : {type : Boolean, default : false}
-	confirmed         : {type : Boolean, default : false}
 	signUpDate        : {type : Date, default: () -> new Date() }
 	lastLoggedIn      : {type : Date}
+	lastLoginIp       : {type : String, default : ''}
 	loginCount        : {type : Number, default: 0}
 	holdingAccount    : {type : Boolean, default: false}
 	ace               : {
 		mode               : {type : String, default: 'none'}
 		theme              : {type : String, default: 'textmate'}
+		overallTheme       : {type: String, default: "" }
 		fontSize           : {type : Number, default:'12'}
 		autoComplete       : {type : Boolean, default: true}
 		autoPairDelimiters : {type : Boolean, default: true}
@@ -41,6 +43,7 @@ UserSchema = new Schema
 		versioning:       { type:Boolean, default: Settings.defaultFeatures.versioning }
 		dropbox:          { type:Boolean, default: Settings.defaultFeatures.dropbox }
 		github:           { type:Boolean, default: Settings.defaultFeatures.github }
+		gitBridge:        { type:Boolean, default: Settings.defaultFeatures.gitBridge }
 		compileTimeout:   { type:Number, default: Settings.defaultFeatures.compileTimeout }
 		compileGroup:     { type:String,  default: Settings.defaultFeatures.compileGroup }
 		templates:        { type:Boolean, default: Settings.defaultFeatures.templates }
@@ -73,6 +76,7 @@ UserSchema = new Schema
 		accessToken: { type: String }
 		refreshToken: { type: String }
 	awareOfV2: { type:Boolean, default: false }
+	useCollabratecV2: { type:Boolean, default: false }
 
 conn = mongoose.createConnection(Settings.mongo.url, {
 	server: {poolSize: Settings.mongo.poolSize || 10},

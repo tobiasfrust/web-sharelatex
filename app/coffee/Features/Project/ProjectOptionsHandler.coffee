@@ -17,6 +17,16 @@ module.exports =
 			if callback?
 				callback()
 
+	setImageName : (project_id, imageName, callback = ()->)->
+		logger.log project_id:project_id, imageName:imageName, "setting the imageName"
+		imageName = imageName.toLowerCase()
+		if ! _.some(settings.allowedImageNames, (allowed) -> imageName is allowed.imageName)
+			return callback()
+		conditions = {_id:project_id}
+		update = {imageName: settings.imageRoot + '/' + imageName}
+		Project.update conditions, update, {}, (err)->
+			if callback?
+				callback()
 
 	setSpellCheckLanguage: (project_id, languageCode, callback = ()->)->
 		logger.log project_id:project_id, languageCode:languageCode, "setting the spell check language"
@@ -35,4 +45,15 @@ module.exports =
 				callback()
 		else
 			logger.err project_id:project_id, languageCode:languageCode, "tryed to set unsafe language"
+			callback()
+
+	setBrandVariationId: (project_id, brandVariationId, callback = ()->)->
+		logger.log project_id:project_id, brandVariationId:brandVariationId, "setting the brand variation id"
+		if !brandVariationId? or brandVariationId == ""
+			return callback()
+		conditions = {_id:project_id}
+		update = {brandVariationId}
+		Project.update conditions, update, {}, (err)->
+			if err?
+				logger.err err:err, "error setting brandVariationId"
 			callback()

@@ -9,7 +9,7 @@ Settings = require "settings-sharelatex"
 AuthenticationController = require "../Authentication/AuthenticationController"
 UserGetter = require "../User/UserGetter"
 RateLimiter = require("../../infrastructure/RateLimiter")
-ClsiCookieManager = require("./ClsiCookieManager")()
+ClsiCookieManager = require("./ClsiCookieManager")(Settings.apis.clsi?.backendGroupName)
 Path = require("path")
 
 module.exports = CompileController =
@@ -262,7 +262,7 @@ module.exports = CompileController =
 			if req.query?.pdfng
 				newHeaders = {}
 				for h, v of req.headers
-					newHeaders[h] = req.headers[h] if h.match /^(If-|Range)/i
+					newHeaders[h] = req.headers[h] if /^(If-|Range)/i.test(h)
 				options.headers = newHeaders
 			proxy = request(options)
 			proxy.pipe(res)

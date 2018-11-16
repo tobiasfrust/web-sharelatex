@@ -9,6 +9,7 @@ Router = require('../router')
 helmet = require "helmet"
 metrics.inc("startup")
 UserSessionsRedis = require('../Features/User/UserSessionsRedis')
+Csrf = require('./Csrf')
 
 sessionsRedisClient = UserSessionsRedis.client()
 
@@ -17,9 +18,8 @@ RedisStore = require('connect-redis')(session)
 bodyParser = require('body-parser')
 multer  = require('multer')
 methodOverride = require('method-override')
-csrf = require('csurf')
-csrfProtection = csrf()
 cookieParser = require('cookie-parser')
+bearerToken = require('express-bearer-token')
 
 # Init the session store
 sessionStore = new RedisStore(client:sessionsRedisClient)
@@ -68,12 +68,13 @@ Modules.loadViewIncludes app
 
 app.use bodyParser.urlencoded({ extended: true, limit: "2mb"})
 # Make sure we can process the max doc length plus some overhead for JSON encoding
-app.use bodyParser.json({limit: Settings.max_doc_length + 16 * 1024}) # 16kb overhead
+app.use bodyParser.json({limit: Settings.max_doc_length + 64 * 1024}) # 64kb overhead
 app.use multer(dest: Settings.path.uploadFolder)
 app.use methodOverride()
+app.use bearerToken()
 
 app.use metrics.http.monitor(logger)
-app.use RedirectManager
+RedirectManager.apply(webRouter)
 ProxyManager.apply(publicApiRouter)
 
 
@@ -112,7 +113,8 @@ Modules.hooks.fire 'passportSetup', passport, (err) ->
 
 Modules.applyNonCsrfRouter(webRouter, privateApiRouter, publicApiRouter)
 
-webRouter.use csrfProtection
+webRouter.csrf = new Csrf()
+webRouter.use webRouter.csrf.middleware
 webRouter.use translations.expressMiddlewear
 webRouter.use translations.setLangBasedOnDomainMiddlewear
 

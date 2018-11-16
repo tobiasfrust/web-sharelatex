@@ -36,11 +36,14 @@ class User
 		db.users.update {_id: ObjectId(@_id)}, updateOp, callback
 
 	register: (callback = (error, user) ->) ->
+		@registerWithQuery('', callback)
+
+	registerWithQuery: (query, callback = (error, user) ->) ->
 		return callback(new Error('User already registered')) if @_id?
 		@getCsrfToken (error) =>
 			return callback(error) if error?
 			@request.post {
-				url: '/register'
+				url: '/register' + query
 				json: { @email, @password }
 			}, (error, response, body) =>
 				return callback(error) if error?
@@ -58,7 +61,7 @@ class User
 			@getCsrfToken (error) =>
 				return callback(error) if error?
 				@request.post {
-					url: "/login"
+					url: if settings.enableLegacyLogin then "/login/legacy" else "/login"
 					json: { email, @password }
 				}, callback
 
@@ -79,6 +82,9 @@ class User
 		for key, value of features
 			update["features.#{key}"] = value
 		UserModel.update { _id: @id }, update, callback
+
+	setOverleafId: (overleaf_id, callback = (error) ->) ->
+		UserModel.update { _id: @id }, { 'overleaf.id': overleaf_id }, callback
 
 	logout: (callback = (error) ->) ->
 		@getCsrfToken (error) =>
@@ -146,7 +152,7 @@ class User
 				return callback()
 			user_id = user._id
 			db.projects.remove owner_ref:ObjectId(user_id), {multi:true}, (err)->
-				if err? 
+				if err?
 					callback(err)
 				db.users.remove {_id: ObjectId(user_id)}, callback
 
@@ -178,6 +184,10 @@ class User
 		}, (error, response, body) ->
 			return callback(error) if error?
 			callback(null)
+
+	deleteProjects: (callback=(error)) ->
+		db.projects.remove owner_ref:ObjectId(@id), {multi:true}, (err)->
+			callback(err)
 
 	openProject: (project_id, callback=(error)) ->
 		@request.get {

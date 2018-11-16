@@ -4,6 +4,10 @@
   including About and Blog
 */
 .cms-page {
+  img {
+    height: auto;
+    max-width: 100%;
+  }
   .btn-description {
     margin-right: @margin-sm;
   }
@@ -41,8 +45,8 @@
     All content from CMS is in .row-spaced.
     Margin below is to fix extra whitespace for first rows
   */
-  .container > .row:nth-child(2) {
-    //- first child is page header, don't correct margin
+  .container > .row:nth-child(2), .content-container > .row:first-child {
+    //- .container first child is page header, don't correct margin
     margin-top: 0;
   }
   .tab-pane {
@@ -84,5 +88,67 @@
       margin-right: @margin-sm;
       margin-bottom: @margin-sm;
     }
+  }
+
+  /*
+    universities page
+  */
+  #universities-container {
+    padding: @padding-md;
+    width: 100%;
+    .row {
+      border-bottom: 1px solid @gray-lightest;
+      div {
+        padding: @padding-md;
+        vertical-align: middle;
+      }
+    }
+    .row:first-child {
+      // parent container contains padding
+      div {
+        padding-top: 0;
+      }
+    }
+    .row:last-child {
+      border: 0;
+      // parent container contains padding
+      div {
+        border: 0;
+        padding-bottom: 0;
+      }
+    }
+    p {
+      margin: 0 auto;
+      width: 100%;
+    }
+    // Logos
+    .uni-logo {
+      margin: 0 auto;
+      max-height: 55px;
+      min-width: 55px;
+    }
+    .university-claim-btn {
+      text-align: center;
+    }
+    @media only screen and (min-width: @screen-xs-min) {
+      display: table;
+      table-layout: fixed;
+      .row {
+        display: table-row;
+        div {
+          border-bottom: 1px solid @gray-lightest;
+          display: table-cell;
+          float: none;
+        }
+      }
+    }
+  }
+
+  /*
+    videos
+  */
+  video {
+    height: auto;
+    max-width: 100%;
   }
 }
