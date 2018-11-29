@@ -29,13 +29,7 @@ module.exports = SubscriptionUpdater =
 		@addUsersToGroup(subscriptionId, [userId], callback)
 
 	addUsersToGroup: (subscriptionId, memberIds, callback)->
-		logger.log subscriptionId: subscriptionId, memberIds: memberIds, "adding members into mongo subscription"
-		searchOps =
-			_id: subscriptionId
-		insertOperation =
-			{ $addToSet: { member_ids: { $each: memberIds } } }
-
-		Subscription.findAndModify searchOps, insertOperation, (err, subscription) ->
+		@addUsersToGroupWithoutFeaturesRefresh subscriptionId, memberIds, (err) ->
 			return callback(err) if err?
 
 			# Only apply features updates to users, not user stubs
@@ -45,6 +39,14 @@ module.exports = SubscriptionUpdater =
 				userIds = users.map (u) -> u._id.toString()
 				async.map userIds, FeaturesUpdater.refreshFeatures, callback
 
+	addUsersToGroupWithoutFeaturesRefresh: (subscriptionId, memberIds, callback)->
+		logger.log subscriptionId: subscriptionId, memberIds: memberIds, "adding members into mongo subscription"
+		searchOps =
+			_id: subscriptionId
+		insertOperation =
+			{ $addToSet: { member_ids: { $each: memberIds } } }
+
+		Subscription.findAndModify searchOps, insertOperation, callback
 
 	removeUserFromGroup: (subscriptionId, user_id, callback)->
 		searchOps =
@@ -75,7 +77,6 @@ module.exports = SubscriptionUpdater =
 	_createNewSubscription: (adminUser_id, callback)->
 		logger.log adminUser_id:adminUser_id, "creating new subscription"
 		subscription = new Subscription(admin_id:adminUser_id, manager_ids: [adminUser_id])
-		subscription.freeTrial.allowed = false
 		subscription.save (err)->
 			callback err, subscription
 
@@ -84,9 +85,6 @@ module.exports = SubscriptionUpdater =
 		if recurlySubscription.state == "expired"
 			return SubscriptionUpdater.deleteSubscription subscription._id, callback
 		subscription.recurlySubscription_id = recurlySubscription.uuid
-		subscription.freeTrial.expiresAt = undefined
-		subscription.freeTrial.planCode = undefined
-		subscription.freeTrial.allowed = true
 		subscription.planCode = recurlySubscription.plan.plan_code
 		plan = PlansLocator.findLocalPlanInSettings(subscription.planCode)
 		if !plan?

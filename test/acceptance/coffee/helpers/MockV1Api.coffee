@@ -5,7 +5,11 @@ sinon = require 'sinon'
 
 app.use(bodyParser.json())
 
+v1Id = 1000
+
 module.exports = MockV1Api =
+	nextV1Id: -> v1Id++
+
 	users: { }
 
 	setUser: (id, user) ->
@@ -42,6 +46,14 @@ module.exports = MockV1Api =
 			else
 				res.sendStatus 404
 
+		app.get "/api/v1/sharelatex/users/:v1_user_id/subscriptions", (req, res, next) =>
+			user = @users[req.params.v1_user_id]
+			if user?.subscription?
+				res.json user.subscription
+			else
+				res.sendStatus 404
+
+
 		app.post "/api/v1/sharelatex/users/:v1_user_id/sync", (req, res, next) =>
 			@syncUserFeatures(req.params.v1_user_id)
 			res.sendStatus 200
@@ -63,7 +75,10 @@ module.exports = MockV1Api =
 			res.json []
 
 		app.get '/universities/list/:id', (req, res, next) ->
-			res.json id: parseInt(req.params.id)
+			res.json {
+				id: parseInt(req.params.id)
+				name: "Institution #{req.params.id}"
+			}
 
 		app.get '/university/domains', (req, res, next) ->
 			res.json []
