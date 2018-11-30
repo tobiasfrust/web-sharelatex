@@ -161,7 +161,7 @@ module.exports = ProjectDetailsHandler =
 		return name.substr(0, truncatedLength) + suffix
 
 	_addNumericSuffixToProjectName: (name, allProjectNames) ->
-		NUMERIC_SUFFIX_MATCH = / \((\d+)\)$/
+		NUMERIC_SUFFIX_MATCH = /\((\d+)\)$/
 		suffixedName = (basename, number) ->
 			suffix = " (#{number})"
 			return basename.substr(0, ProjectDetailsHandler.MAX_PROJECT_NAME_LENGTH - suffix.length) + suffix
